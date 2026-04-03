@@ -1,0 +1,18 @@
+<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+  <h2 class="text-xl font-semibold">今日作战台状态</h2>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+    {% for item in ops_status %}
+    <div class="rounded-xl border p-4 {% if item.done %}border-emerald-800 bg-emerald-950/20{% else %}border-slate-800 bg-slate-950/40{% endif %}">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <div class="font-medium">{{ item.time }} {{ item.task }}</div>
+          <div class="text-slate-400 text-sm mt-1">{{ item.goal }}</div>
+        </div>
+        <div class="text-sm {% if item.done %}text-emerald-300{% else %}text-slate-400{% endif %}">
+          {% if item.done %}已记录{% else %}待执行{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>

@@ -1,3 +1,4 @@
+from collections import Counter
 from datetime import date
 
 from django.shortcuts import render
@@ -22,7 +23,8 @@ SCHEDULE = [
 
 def worklog_view(request):
     latest_logs = WorklogEntryPage.objects.live().public().order_by('-log_date', '-log_time', '-first_published_at')[:8]
-    today_logs = WorklogEntryPage.objects.live().public().filter(log_date=date.today()).order_by('-log_time', '-first_published_at')[:8]
+    today_logs_qs = WorklogEntryPage.objects.live().public().filter(log_date=date.today()).order_by('-log_time', '-first_published_at')
+    today_logs = today_logs_qs[:8]
     actionable_logs = WorklogEntryPage.objects.live().public().filter(is_actionable=True).order_by('-log_date', '-log_time', '-first_published_at')[:6]
     holdings = Holding.objects.filter(active=True).order_by('code')
     watchlist = WatchlistItem.objects.filter(active=True).order_by('priority', 'code')
@@ -46,6 +48,33 @@ def worklog_view(request):
                 focus_symbols.append(code)
                 seen.add(code)
 
+    today_type_counter = Counter(today_logs_qs.values_list('log_type', flat=True))
+    type_map = {
+        'morning': '早报',
+        'preopen': '盘前',
+        'intraday': '盘中',
+        'postclose': '盘后',
+        'alert': '提醒',
+    }
+    today_type_summary = [
+        {'key': key, 'label': type_map.get(key, key), 'count': count}
+        for key, count in today_type_counter.items()
+    ]
+
+    recorded_slots = set()
+    for log in today_logs_qs:
+        if log.log_time:
+            recorded_slots.add(log.log_time.strftime('%H:%M'))
+    ops_status = [
+        {
+            'time': time,
+            'task': task,
+            'goal': goal,
+            'done': time in recorded_slots,
+        }
+        for time, task, goal, _points in SCHEDULE
+    ]
+
     return render(request, 'dashboard/worklog.html', {
         'domain': 'kr2-openclaw.httpd.site',
         'fixed_points': 96,
@@ -57,6 +86,8 @@ def worklog_view(request):
         'today_points': today_points,
         'focus_symbols': focus_symbols[:12],
         'schedule': SCHEDULE,
+        'ops_status': ops_status,
+        'today_type_summary': today_type_summary,
         'latest_logs': latest_logs,
         'today_logs': today_logs,
         'actionable_logs': actionable_logs,
