@@ -3,15 +3,7 @@ from datetime import date
 from django.shortcuts import render
 
 from dashboard.models import WorklogEntryPage
-
-WATCHLIST = [
-    '002565','002361','603601','301005','002131','300136','002413','000559','600105','002195','603667','002050','603778','600171','600460','600584','002156','002149','300308','300502','300604','002709','600089','002371','300394','688008','002202','300223','002837','603986','301200','300014'
-]
-
-HOLDINGS = [
-    {'code': '002156', 'name': '通富微电', 'shares': 2500, 'cost': 47.5, 'note': '持仓优先跟踪'},
-    {'code': '300394', 'name': '天孚通信', 'shares': 200, 'cost': 339.5, 'note': '2026-04-03 上午买入'},
-]
+from dashboard.snippets import Holding, WatchlistItem
 
 SCHEDULE = [
     ('06:30', '早间作战总报告', '外围市场、宏观、情绪预判、赛道消息汇总', '8~12'),
@@ -37,8 +29,8 @@ def worklog_view(request):
         'domain': 'kr2-openclaw.httpd.site',
         'fixed_points': 96,
         'reserve_points': 120,
-        'watchlist': WATCHLIST,
-        'holdings': HOLDINGS,
+        'watchlist': WatchlistItem.objects.filter(active=True).order_by('priority', 'code'),
+        'holdings': Holding.objects.filter(active=True).order_by('code'),
         'schedule': SCHEDULE,
         'latest_logs': latest_logs,
         'today_logs': today_logs,
