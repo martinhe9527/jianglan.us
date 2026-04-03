@@ -32,20 +32,23 @@ def worklog_view(request):
     total_shares = sum(item.shares for item in holdings)
     today_points = sum(item.points_used for item in today_logs)
 
+    holding_map = {item.code: item.name for item in holdings}
+    watchlist_map = {item.code: item.name for item in watchlist}
+
     focus_symbols = []
     seen = set()
     for item in holdings:
         if item.code not in seen:
-            focus_symbols.append(item.code)
+            focus_symbols.append({'code': item.code, 'name': item.name})
             seen.add(item.code)
     for item in top_watchlist:
         if item.code not in seen:
-            focus_symbols.append(item.code)
+            focus_symbols.append({'code': item.code, 'name': item.name})
             seen.add(item.code)
     for log in actionable_logs:
         for code in [part.strip() for part in (log.related_symbols or '').split(',') if part.strip()]:
             if code not in seen:
-                focus_symbols.append(code)
+                focus_symbols.append({'code': code, 'name': holding_map.get(code) or watchlist_map.get(code) or ''})
                 seen.add(code)
 
     today_type_counter = Counter(today_logs_qs.values_list('log_type', flat=True))
