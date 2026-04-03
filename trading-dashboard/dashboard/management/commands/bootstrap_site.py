@@ -13,9 +13,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         root = Page.get_first_root_node()
 
-        home = HomePage.objects.first()
+        home = HomePage.objects.child_of(root).first()
         if not home:
-            home = HomePage(title='股神首页', slug='home', intro='股神交易工作台首页')
+            slug = 'dashboard-home'
+            if Page.objects.child_of(root).filter(slug=slug).exists():
+                slug = 'dashboard-home-1'
+            home = HomePage(title='股神首页', slug=slug, intro='股神交易工作台首页')
             root.add_child(instance=home)
             home.save_revision().publish()
             self.stdout.write(self.style.SUCCESS('Created HomePage'))

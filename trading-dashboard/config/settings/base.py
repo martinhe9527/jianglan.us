@@ -99,5 +99,6 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 WAGTAIL_SITE_NAME = '股神交易日志'
+WAGTAILADMIN_BASE_URL = 'http://kr2-openclaw.httpd.site'
 TAILWIND_APP_NAME = 'theme'
 INTERNAL_IPS = ['127.0.0.1']
