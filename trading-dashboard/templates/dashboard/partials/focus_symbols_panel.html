@@ -1,0 +1,11 @@
+<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+  <h2 class="text-xl font-semibold">今日重点股票</h2>
+  <div class="mt-4 flex flex-wrap gap-2">
+    {% for code in focus_symbols %}
+    <span class="px-3 py-1.5 rounded-full bg-sky-900/30 text-sky-200 text-sm border border-sky-700">{{ code }}</span>
+    {% empty %}
+    <div class="text-slate-400">当前还没有重点股票。</div>
+    {% endfor %}
+  </div>
+  <div class="text-slate-400 text-sm mt-4">由持仓、监测池优先级和动作提醒相关股票自动汇总。</div>
+</div>

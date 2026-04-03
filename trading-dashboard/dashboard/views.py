@@ -30,6 +30,22 @@ def worklog_view(request):
     total_shares = sum(item.shares for item in holdings)
     today_points = sum(item.points_used for item in today_logs)
 
+    focus_symbols = []
+    seen = set()
+    for item in holdings:
+        if item.code not in seen:
+            focus_symbols.append(item.code)
+            seen.add(item.code)
+    for item in top_watchlist:
+        if item.code not in seen:
+            focus_symbols.append(item.code)
+            seen.add(item.code)
+    for log in actionable_logs:
+        for code in [part.strip() for part in (log.related_symbols or '').split(',') if part.strip()]:
+            if code not in seen:
+                focus_symbols.append(code)
+                seen.add(code)
+
     return render(request, 'dashboard/worklog.html', {
         'domain': 'kr2-openclaw.httpd.site',
         'fixed_points': 96,
@@ -39,6 +55,7 @@ def worklog_view(request):
         'holdings': holdings,
         'total_shares': total_shares,
         'today_points': today_points,
+        'focus_symbols': focus_symbols[:12],
         'schedule': SCHEDULE,
         'latest_logs': latest_logs,
         'today_logs': today_logs,

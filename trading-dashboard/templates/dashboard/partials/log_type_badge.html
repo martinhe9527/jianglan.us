@@ -1,0 +1,13 @@
+{% if log.log_type == 'morning' %}
+<span class="px-2.5 py-1 rounded-full bg-indigo-900/40 text-indigo-200 text-xs border border-indigo-700">早报</span>
+{% elif log.log_type == 'preopen' %}
+<span class="px-2.5 py-1 rounded-full bg-cyan-900/40 text-cyan-200 text-xs border border-cyan-700">盘前</span>
+{% elif log.log_type == 'intraday' %}
+<span class="px-2.5 py-1 rounded-full bg-amber-900/40 text-amber-200 text-xs border border-amber-700">盘中</span>
+{% elif log.log_type == 'postclose' %}
+<span class="px-2.5 py-1 rounded-full bg-violet-900/40 text-violet-200 text-xs border border-violet-700">盘后</span>
+{% elif log.log_type == 'alert' %}
+<span class="px-2.5 py-1 rounded-full bg-emerald-900/40 text-emerald-200 text-xs border border-emerald-700">提醒</span>
+{% else %}
+<span class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-200 text-xs border border-slate-700">{{ log.get_log_type_display }}</span>
+{% endif %}
