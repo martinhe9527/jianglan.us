@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-10">
+  <article class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+    <div class="text-sm text-slate-400 mb-3">{{ page.log_date }} {% if page.log_time %}{{ page.log_time }}{% endif %} ｜ {{ page.get_log_type_display }}</div>
+    <h1 class="text-3xl font-bold">{{ page.title }}</h1>
+    {% if page.title_note %}
+    <div class="text-sky-400 mt-2">{{ page.title_note }}</div>
+    {% endif %}
+    <div class="flex gap-3 mt-4 text-sm flex-wrap">
+      <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700">积分 {{ page.points_used }}</span>
+      {% if page.related_symbols %}
+      <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700">相关股票 {{ page.related_symbols }}</span>
+      {% endif %}
+      {% if page.is_actionable %}
+      <span class="px-3 py-1 rounded-full bg-emerald-900/40 text-emerald-300 border border-emerald-700">有动作价值</span>
+      {% endif %}
+    </div>
+    {% if page.summary %}
+    <p class="text-slate-300 mt-5">{{ page.summary }}</p>
+    {% endif %}
+    <div class="prose prose-invert max-w-none mt-6">{{ page.body|richtext }}</div>
+  </article>
+</div>
+{% endblock %}

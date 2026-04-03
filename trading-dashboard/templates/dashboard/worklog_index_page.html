@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}交易日志索引{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-10">
+  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+    <h1 class="text-3xl font-bold">{{ page.title }}</h1>
+    <div class="text-slate-400 mt-3">{{ page.intro|richtext }}</div>
+  </div>
+
+  <div class="mt-6 space-y-4">
+    {% for entry in page.get_children.specific %}
+    <article class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+      <div class="flex flex-wrap items-center gap-3 justify-between">
+        <div>
+          <h2 class="text-xl font-semibold"><a href="{{ entry.url }}">{{ entry.title }}</a></h2>
+          <div class="text-slate-400 text-sm mt-1">{{ entry.log_date }} {% if entry.log_time %}{{ entry.log_time }}{% endif %} ｜ {{ entry.get_log_type_display }}</div>
+        </div>
+        <div class="text-sm">
+          <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700">积分 {{ entry.points_used }}</span>
+          {% if entry.is_actionable %}
+          <span class="px-3 py-1 rounded-full bg-emerald-900/40 text-emerald-300 border border-emerald-700">可执行</span>
+          {% endif %}
+        </div>
+      </div>
+      {% if entry.summary %}
+      <p class="text-slate-300 mt-3">{{ entry.summary }}</p>
+      {% endif %}
+    </article>
+    {% empty %}
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 text-slate-400">还没有日志条目。</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
