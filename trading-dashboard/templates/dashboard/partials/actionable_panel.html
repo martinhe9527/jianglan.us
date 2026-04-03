@@ -1,0 +1,15 @@
+<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+  <h2 class="text-xl font-semibold">动作提醒面板</h2>
+  <div class="space-y-3 mt-4">
+    {% for log in actionable_logs %}
+    <div class="rounded-xl border border-emerald-800/60 p-4 bg-emerald-950/20">
+      <div class="font-medium">{{ log.title }}</div>
+      <div class="text-slate-400 text-sm mt-1">{{ log.log_date }} {% if log.log_time %}{{ log.log_time }}{% endif %}</div>
+      {% if log.summary %}<div class="text-slate-300 text-sm mt-2">{{ log.summary }}</div>{% endif %}
+      {% if log.related_symbols %}<div class="text-emerald-300 text-sm mt-2">{{ log.related_symbols }}</div>{% endif %}
+    </div>
+    {% empty %}
+    <div class="text-slate-400">当前没有动作提醒。</div>
+    {% endfor %}
+  </div>
+</div>

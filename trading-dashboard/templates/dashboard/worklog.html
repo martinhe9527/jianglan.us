@@ -7,24 +7,7 @@
     <p class="text-slate-400 mt-2">域名：{{ domain }} ｜ 固定积分：{{ fixed_points }} ｜ 总预备：{{ reserve_points }}</p>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-      <div class="text-slate-400 text-sm">持仓数量</div>
-      <div class="text-3xl font-bold mt-2">{{ holdings|length }}</div>
-    </div>
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-      <div class="text-slate-400 text-sm">持仓总股数</div>
-      <div class="text-3xl font-bold mt-2">{{ total_shares }}</div>
-    </div>
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-      <div class="text-slate-400 text-sm">监测池数量</div>
-      <div class="text-3xl font-bold mt-2">{{ watchlist|length }}</div>
-    </div>
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-      <div class="text-slate-400 text-sm">今日日志积分</div>
-      <div class="text-3xl font-bold mt-2">{{ today_points }}</div>
-    </div>
-  </div>
+  {% include 'dashboard/partials/summary_cards.html' %}
 
   <div class="mt-8 grid grid-cols-1 xl:grid-cols-3 gap-6">
     <section class="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
@@ -147,30 +130,21 @@
         </div>
       </div>
 
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <h2 class="text-xl font-semibold">可执行提醒</h2>
-        <div class="space-y-3 mt-4">
-          {% for log in actionable_logs %}
-          <div class="rounded-xl border border-emerald-800/60 p-4 bg-emerald-950/20">
-            <div class="font-medium">{{ log.title }}</div>
-            <div class="text-slate-400 text-sm mt-1">{{ log.log_date }} {% if log.log_time %}{{ log.log_time }}{% endif %}</div>
-            {% if log.related_symbols %}<div class="text-emerald-300 text-sm mt-2">{{ log.related_symbols }}</div>{% endif %}
-          </div>
-          {% empty %}
-          <div class="text-slate-400">当前没有可执行提醒。</div>
-          {% endfor %}
-        </div>
-      </div>
+      {% include 'dashboard/partials/actionable_panel.html' %}
+      {% include 'dashboard/partials/latest_logs_panel.html' %}
     </section>
   </div>
 
   <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6">
     <h2 class="text-xl font-semibold">下一步开发状态</h2>
     <ul class="mt-4 space-y-2 text-slate-300 list-disc pl-5">
-      <li>已建立 WorklogIndexPage / WorklogEntryPage 数据模型</li>
-      <li>已准备后台站点初始化命令 <code>bootstrap_site</code></li>
-      <li>已准备示例日志导入命令 <code>load_sample_logs</code></li>
-      <li>后续可将早报、盘前、盘中、盘后日志录入 Wagtail 后台</li>
+      <li>已建立 <code>WorklogIndexPage</code> / <code>WorklogEntryPage</code> 日志数据模型</li>
+      <li>已建立持仓与监测池后台模型：<code>Holding</code> / <code>WatchlistItem</code></li>
+      <li>已准备后台站点初始化命令：<code>bootstrap_site</code></li>
+      <li>已准备示例日志导入命令：<code>load_sample_logs</code></li>
+      <li>已准备持仓与监测池导入命令：<code>load_portfolio_data</code></li>
+      <li>已支持后续将早报、盘前、盘中、盘后日志录入 Wagtail 后台</li>
+      <li>后续将继续完善首页工作台、后台录入体验、Docker/Nginx 部署验证</li>
     </ul>
   </div>
 </div>
