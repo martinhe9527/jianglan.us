@@ -24,13 +24,21 @@ def worklog_view(request):
     latest_logs = WorklogEntryPage.objects.live().public().order_by('-log_date', '-log_time', '-first_published_at')[:8]
     today_logs = WorklogEntryPage.objects.live().public().filter(log_date=date.today()).order_by('-log_time', '-first_published_at')[:8]
     actionable_logs = WorklogEntryPage.objects.live().public().filter(is_actionable=True).order_by('-log_date', '-log_time', '-first_published_at')[:6]
+    holdings = Holding.objects.filter(active=True).order_by('code')
+    watchlist = WatchlistItem.objects.filter(active=True).order_by('priority', 'code')
+    top_watchlist = watchlist[:8]
+    total_shares = sum(item.shares for item in holdings)
+    today_points = sum(item.points_used for item in today_logs)
 
     return render(request, 'dashboard/worklog.html', {
         'domain': 'kr2-openclaw.httpd.site',
         'fixed_points': 96,
         'reserve_points': 120,
-        'watchlist': WatchlistItem.objects.filter(active=True).order_by('priority', 'code'),
-        'holdings': Holding.objects.filter(active=True).order_by('code'),
+        'watchlist': watchlist,
+        'top_watchlist': top_watchlist,
+        'holdings': holdings,
+        'total_shares': total_shares,
+        'today_points': today_points,
         'schedule': SCHEDULE,
         'latest_logs': latest_logs,
         'today_logs': today_logs,
