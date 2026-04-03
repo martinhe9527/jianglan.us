@@ -1,0 +1,15 @@
+<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+  <h2 class="text-xl font-semibold">交易日节奏条</h2>
+  <div class="mt-4 space-y-3">
+    {% for time, task, goal, points in schedule %}
+    <div class="flex gap-4 items-start rounded-xl border border-slate-800 p-4 bg-slate-950/40">
+      <div class="shrink-0 w-16 text-sky-400 font-semibold">{{ time }}</div>
+      <div class="flex-1">
+        <div class="font-medium">{{ task }}</div>
+        <div class="text-slate-400 text-sm mt-1">{{ goal }}</div>
+      </div>
+      <div class="shrink-0 text-amber-300 text-sm">{{ points }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
