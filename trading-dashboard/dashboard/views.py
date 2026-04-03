@@ -1,4 +1,8 @@
+from datetime import date
+
 from django.shortcuts import render
+
+from dashboard.models import WorklogEntryPage
 
 WATCHLIST = [
     '002565','002361','603601','301005','002131','300136','002413','000559','600105','002195','603667','002050','603778','600171','600460','600584','002156','002149','300308','300502','300604','002709','600089','002371','300394','688008','002202','300223','002837','603986','301200','300014'
@@ -25,6 +29,10 @@ SCHEDULE = [
 
 
 def worklog_view(request):
+    latest_logs = WorklogEntryPage.objects.live().public().order_by('-log_date', '-log_time', '-first_published_at')[:8]
+    today_logs = WorklogEntryPage.objects.live().public().filter(log_date=date.today()).order_by('-log_time', '-first_published_at')[:8]
+    actionable_logs = WorklogEntryPage.objects.live().public().filter(is_actionable=True).order_by('-log_date', '-log_time', '-first_published_at')[:6]
+
     return render(request, 'dashboard/worklog.html', {
         'domain': 'kr2-openclaw.httpd.site',
         'fixed_points': 96,
@@ -32,4 +40,7 @@ def worklog_view(request):
         'watchlist': WATCHLIST,
         'holdings': HOLDINGS,
         'schedule': SCHEDULE,
+        'latest_logs': latest_logs,
+        'today_logs': today_logs,
+        'actionable_logs': actionable_logs,
     })
