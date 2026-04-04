@@ -1,0 +1,59 @@
+<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <h2 class="text-xl font-semibold">AKShare 行情快照</h2>
+    <div class="text-xs text-slate-400">持仓优先 + 观察池前 5</div>
+  </div>
+
+  {% if market_warning %}
+  <div class="mt-3 rounded-xl border border-amber-800/60 bg-amber-950/20 p-3 text-sm text-amber-200">
+    行情读取告警：{{ market_warning }}
+  </div>
+  {% endif %}
+
+  <div class="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+    {% for item in market_cards %}
+    <div class="rounded-xl border {% if item.is_holding %}border-emerald-800/60 bg-emerald-950/10{% else %}border-slate-800 bg-slate-950/40{% endif %} p-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <div class="font-semibold">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</div>
+          <div class="text-slate-400 text-sm mt-1">{{ item.trade_date }}</div>
+        </div>
+        {% if item.is_holding %}
+        <span class="px-2.5 py-1 rounded-full bg-emerald-900/40 text-emerald-200 text-xs border border-emerald-700">持仓</span>
+        {% else %}
+        <span class="px-2.5 py-1 rounded-full bg-sky-900/30 text-sky-200 text-xs border border-sky-700">观察</span>
+        {% endif %}
+      </div>
+
+      <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+        <div>
+          <div class="text-slate-400">收盘</div>
+          <div class="mt-1 text-slate-100 font-medium">{{ item.close|default:'-' }}</div>
+        </div>
+        <div>
+          <div class="text-slate-400">涨跌幅</div>
+          <div class="mt-1 font-medium {% if item.pct_change and item.pct_change > 0 %}text-rose-300{% elif item.pct_change and item.pct_change < 0 %}text-emerald-300{% else %}text-slate-100{% endif %}">
+            {{ item.pct_change|default:'-' }}{% if item.pct_change != None %}%{% endif %}
+          </div>
+        </div>
+        <div>
+          <div class="text-slate-400">MA5</div>
+          <div class="mt-1 text-slate-100 font-medium">{{ item.ma5|default:'-'|floatformat:2 }}</div>
+        </div>
+        <div>
+          <div class="text-slate-400">MA10</div>
+          <div class="mt-1 text-slate-100 font-medium">{{ item.ma10|default:'-'|floatformat:2 }}</div>
+        </div>
+      </div>
+
+      {% if item.minute %}
+      <div class="mt-3 text-xs text-slate-400">
+        最近 5 分钟：{{ item.minute.time }} ｜ close {{ item.minute.close }}{% if item.minute.volume %} ｜ volume {{ item.minute.volume }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    {% empty %}
+    <div class="text-slate-400">当前还没有可展示的行情快照。</div>
+    {% endfor %}
+  </div>
+</div>

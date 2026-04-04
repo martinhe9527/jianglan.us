@@ -3,6 +3,7 @@ from datetime import date
 
 from django.shortcuts import render
 
+from dashboard.market import MarketDataError, get_market_snapshots
 from dashboard.models import WorklogEntryPage
 from dashboard.snippets import Holding, WatchlistItem
 
@@ -28,8 +29,14 @@ def worklog_view(request):
     actionable_logs = WorklogEntryPage.objects.live().public().filter(is_actionable=True).order_by('-log_date', '-log_time', '-first_published_at')[:6]
     holdings = Holding.objects.filter(active=True).order_by('code')
     watchlist = WatchlistItem.objects.filter(active=True).order_by('priority', 'code')
-    top_watchlist = watchlist[:8]
-    total_shares = sum(item.shares for item in holdings)
+    holding_positions = [
+        {
+            'code': item.code,
+            'name': item.name,
+            'shares': item.shares,
+        }
+        for item in holdings
+    ]
     today_points = sum(item.points_used for item in today_logs)
 
     holding_map = {item.code: item.name for item in holdings}
@@ -37,19 +44,33 @@ def worklog_view(request):
 
     focus_symbols = []
     seen = set()
-    for item in holdings:
-        if item.code not in seen:
-            focus_symbols.append({'code': item.code, 'name': item.name})
-            seen.add(item.code)
-    for item in top_watchlist:
-        if item.code not in seen:
-            focus_symbols.append({'code': item.code, 'name': item.name})
-            seen.add(item.code)
+    holding_codes = {item.code for item in holdings}
+    # '今日重点股票' should exclude existing holdings and only surface candidate symbols.
     for log in actionable_logs:
         for code in [part.strip() for part in (log.related_symbols or '').split(',') if part.strip()]:
-            if code not in seen:
+            if code not in seen and code not in holding_codes:
                 focus_symbols.append({'code': code, 'name': holding_map.get(code) or watchlist_map.get(code) or ''})
                 seen.add(code)
+
+    market_warning = None
+    market_cards = []
+    try:
+        market_codes = []
+        for item in holdings:
+            market_codes.append(item.code)
+        for item in watchlist[:5]:
+            if item.code not in market_codes:
+                market_codes.append(item.code)
+        market_rows, market_warning = get_market_snapshots(market_codes)
+        name_map = {item.code: item.name for item in holdings}
+        name_map.update({item.code: item.name for item in watchlist})
+        holding_codes = {item.code for item in holdings}
+        for row in market_rows:
+            row['name'] = name_map.get(row['code'], '')
+            row['is_holding'] = row['code'] in holding_codes
+            market_cards.append(row)
+    except MarketDataError as exc:
+        market_warning = str(exc)
 
     today_type_counter = Counter(today_logs_qs.values_list('log_type', flat=True))
     type_map = {
@@ -83,9 +104,8 @@ def worklog_view(request):
         'fixed_points': 96,
         'reserve_points': 120,
         'watchlist': watchlist,
-        'top_watchlist': top_watchlist,
         'holdings': holdings,
-        'total_shares': total_shares,
+        'holding_positions': holding_positions,
         'today_points': today_points,
         'focus_symbols': focus_symbols[:12],
         'schedule': SCHEDULE,
@@ -94,4 +114,6 @@ def worklog_view(request):
         'latest_logs': latest_logs,
         'today_logs': today_logs,
         'actionable_logs': actionable_logs,
+        'market_cards': market_cards,
+        'market_warning': market_warning,
     })
