@@ -29,6 +29,7 @@ cat /home/ubuntu/.openclaw/workspace/memory/trading-plan-state.json
   - read current holdings/watchlist from the Wagtail project when available
   - generate a slot message
   - write a report file under `reports/trading-plan/`
+  - create or update the corresponding Wagtail `WorklogEntryPage` for that slot/date
   - append the prepared outbound payload to `memory/trading-plan-push.log`
   - print the generated message into the cron log
 
@@ -37,3 +38,4 @@ cat /home/ubuntu/.openclaw/workspace/memory/trading-plan-state.json
 - The generated content is based on local holdings/watchlist data and fixed slot metadata.
 - Real Feishu push delivery is not yet wired through OpenClaw runtime from cron.
 - Strategy logic, market data, retry policy, and final provider delivery still need to be connected.
+- Exchange holidays are not yet encoded; current scheduler still treats Monday-Friday as trading days.
