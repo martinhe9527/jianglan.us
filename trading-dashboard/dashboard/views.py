@@ -54,6 +54,7 @@ def worklog_view(request):
 
     market_warning = None
     market_cards = []
+    market_meta = None
     try:
         market_codes = []
         for item in holdings:
@@ -61,7 +62,7 @@ def worklog_view(request):
         for item in watchlist[:5]:
             if item.code not in market_codes:
                 market_codes.append(item.code)
-        market_rows, market_warning = get_market_snapshots(market_codes)
+        market_rows, market_warning, market_meta = get_market_snapshots(market_codes)
         name_map = {item.code: item.name for item in holdings}
         name_map.update({item.code: item.name for item in watchlist})
         holding_codes = {item.code for item in holdings}
@@ -116,4 +117,5 @@ def worklog_view(request):
         'actionable_logs': actionable_logs,
         'market_cards': market_cards,
         'market_warning': market_warning,
+        'market_meta': market_meta,
     })
