@@ -19,7 +19,7 @@ if [[ "$weekday" -gt 5 ]]; then
   exit 0
 fi
 
-SLOTS=("06:30" "09:27" "09:35" "10:00" "10:30" "11:20" "13:10" "14:00" "14:28" "14:40" "17:30")
+FIXED_SLOTS=("09:27" "09:40" "10:30" "11:20" "14:00" "14:50" "15:05")
 
 if [[ ! -f "$STATE_FILE" ]]; then
   printf '{"date":"%s","done":[]}\n' "$now_date" > "$STATE_FILE"
@@ -53,9 +53,19 @@ with open(p,'w',encoding='utf-8') as f:
 PY
 }
 
-for slot in "${SLOTS[@]}"; do
-  if [[ "$now_hm" == "$slot" ]]; then
-    already_done=$(python3 - <<'PY' "$STATE_FILE" "$slot"
+is_intraday_window="no"
+if [[ "$now_hm" > "09:14" && "$now_hm" < "11:31" ]]; then
+  is_intraday_window="yes"
+elif [[ "$now_hm" > "12:59" && "$now_hm" < "15:01" ]]; then
+  is_intraday_window="yes"
+fi
+
+for slot in "${FIXED_SLOTS[@]}"; do
+  if [[ "$now_hm" != "$slot" ]]; then
+    continue
+  fi
+
+  already_done=$(python3 - <<'PY' "$STATE_FILE" "$slot"
 import json,sys
 p,slot=sys.argv[1],sys.argv[2]
 with open(p,'r',encoding='utf-8') as f:
@@ -64,23 +74,26 @@ print('yes' if slot in data.get('done',[]) else 'no')
 PY
 )
 
-    if [[ "$already_done" == "yes" ]]; then
-      exit 0
-    fi
-
-    echo "[$(date '+%F %T')] trading-plan slot triggered: $slot"
-
-    if output=$(python3 "$RUNNER" "$slot" 2>&1); then
-      mark_done "$slot"
-      printf '%s\n' "$output"
-      echo "[$(date '+%F %T')] trading-plan slot finished: $slot"
-      exit 0
-    fi
-
-    echo "[$(date '+%F %T')] trading-plan slot failed: $slot"
-    printf '%s\n' "$output" >&2
-    exit 1
+  if [[ "$already_done" == "yes" ]]; then
+    exit 0
   fi
+
+  echo "[$(date '+%F %T')] trading-plan fixed slot triggered: $slot"
+
+  if output=$(python3 "$RUNNER" "$slot" 2>&1); then
+    mark_done "$slot"
+    printf '%s\n' "$output"
+    echo "[$(date '+%F %T')] trading-plan fixed slot finished: $slot"
+    exit 0
+  fi
+
+  echo "[$(date '+%F %T')] trading-plan fixed slot failed: $slot"
+  printf '%s\n' "$output" >&2
+  exit 1
 done
+
+if [[ "$is_intraday_window" == "yes" ]]; then
+  echo "[$(date '+%F %T')] trading-plan minute check window active"
+fi
 
 exit 0

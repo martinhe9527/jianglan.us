@@ -60,48 +60,55 @@ def build_message(slot: str, slot_info: dict, holdings: list, watchlist: list, w
     title = slot_info.get('title', slot)
     goal = slot_info.get('goal', '')
     lines = [
-        f'【自动任务】{title}',
-        f'时间：{now.strftime("%F %R")}',
+        f'【{title}】{now.strftime("%F %R")}',
         f'目标：{goal}',
     ]
 
+    lines.append('持仓动作：')
     if holdings:
-        lines.append('当前持仓：')
-        for item in holdings:
-            lines.append(f"- {item['code']} {item['name']}｜{item['shares']}股｜成本 {item['cost']}")
+        for item in holdings[:3]:
+            lines.append(
+                f"- {item['code']} {item['name']}：继续观察；现有持仓 {item['shares']}股，先围绕成本 {item['cost']} 做风控。"
+            )
     else:
-        lines.append('当前持仓：暂无可读数据')
+        lines.append('- 暂无持仓数据：先不下动作。')
 
     held_codes = {item['code'] for item in holdings}
-    candidates = [item for item in watchlist if item['code'] not in held_codes][:5]
+    candidates = [item for item in watchlist if item['code'] not in held_codes][:3]
+    lines.append('自选动作：')
     if candidates:
-        lines.append('候选观察：')
         for item in candidates:
-            label = f"{item['code']} {item['name']}".strip()
-            lines.append(f"- {label}｜优先级 {item['priority']}")
+            lines.append(
+                f"- {item['code']} {item['name']}：继续跟踪；暂列今日重点观察，等盘中确认。"
+            )
     else:
-        lines.append('候选观察：暂无可读数据')
+        lines.append('- 暂无自选候选：先不新增重点。')
 
-    lines.append('状态：当前为自动触发版，已能按时生成并记录消息；分析结论仍需继续接入数据源与策略逻辑。')
+    lines.append('今日重点：')
+    if candidates:
+        lines.append('、'.join(f"{item['code']} {item['name']}" for item in candidates))
+    else:
+        lines.append('暂无')
+
     if warning:
-        lines.append(f'注意：本次读取站点数据时出现问题：{warning}')
+        lines.append(f'注意：数据读取已回退，原因：{warning}')
 
     return '\n'.join(lines)
 
 
 def build_summary(slot_info: dict, holdings: list, watchlist: list, warning: str | None):
     holding_text = '、'.join(
-        f"{item['code']} {item['name']} {item['shares']}股/成本{item['cost']}" for item in holdings[:3]
-    ) or '暂无持仓数据'
+        f"{item['code']} {item['name']}" for item in holdings[:2]
+    ) or '暂无持仓'
     held_codes = {item['code'] for item in holdings}
-    candidates = [item for item in watchlist if item['code'] not in held_codes][:3]
+    candidates = [item for item in watchlist if item['code'] not in held_codes][:2]
     candidate_text = '、'.join(
-        f"{item['code']} {item['name']}".strip() for item in candidates
-    ) or '暂无候选观察'
+        f"{item['code']} {item['name']}" for item in candidates
+    ) or '暂无重点'
 
-    summary = f"{slot_info.get('goal', '')}｜持仓：{holding_text}｜候选：{candidate_text}"
+    summary = f"持仓动作：{holding_text}｜自选动作：{candidate_text}"
     if warning:
-        summary += '｜数据读取有回退'
+        summary += '｜数据回退'
     return summary[:250]
 
 
