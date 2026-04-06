@@ -1,11 +1,31 @@
 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-  <h2 class="text-xl font-semibold">今日重点股票</h2>
-  <div class="mt-4 flex flex-wrap gap-2">
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <h2 class="text-xl font-semibold">今日重点股票</h2>
+    <div class="text-xs text-slate-400">
+      {% if focus_source == 'snapshots' %}来源：Tushare 快照排序{% else %}来源：近期动作日志回退{% endif %}
+    </div>
+  </div>
+  <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
     {% for item in focus_symbols %}
-    <span class="px-3 py-1.5 rounded-full bg-sky-900/30 text-sky-200 text-sm border border-sky-700">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</span>
+    <div class="rounded-xl border border-sky-800 bg-sky-950/20 p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <div class="font-semibold text-sky-100">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</div>
+          {% if item.reason %}<div class="text-xs text-slate-400 mt-1">{{ item.reason }}</div>{% endif %}
+        </div>
+        {% if item.pct_change != None %}
+        <div class="text-sm font-medium {% if item.pct_change > 0 %}text-rose-300{% elif item.pct_change < 0 %}text-emerald-300{% else %}text-slate-200{% endif %}">
+          {{ item.pct_change|floatformat:2 }}%
+        </div>
+        {% endif %}
+      </div>
+      <div class="mt-3 text-xs text-slate-400 flex gap-3 flex-wrap">
+        {% if item.close != None %}<span>收盘 {{ item.close|floatformat:2 }}</span>{% endif %}
+        {% if item.score != None %}<span>评分 {{ item.score|floatformat:2 }}</span>{% endif %}
+      </div>
+    </div>
     {% empty %}
     <div class="text-slate-400">当前还没有重点股票。</div>
     {% endfor %}
   </div>
-  <div class="text-slate-400 text-sm mt-4">由持仓、监测池优先级和动作提醒相关股票自动汇总。</div>
 </div>

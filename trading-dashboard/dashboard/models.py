@@ -49,3 +49,31 @@ class WorklogEntryPage(Page):
 
     class Meta:
         ordering = ['-log_date', '-log_time', '-first_published_at']
+
+
+class MinuteBar(models.Model):
+    symbol = models.CharField('股票代码', max_length=16, db_index=True)
+    name = models.CharField('股票名称', max_length=64, blank=True)
+    trade_date = models.DateField('交易日期', db_index=True)
+    bar_time = models.TimeField('分钟时间', db_index=True)
+    open_price = models.DecimalField('开盘价', max_digits=12, decimal_places=3)
+    high_price = models.DecimalField('最高价', max_digits=12, decimal_places=3)
+    low_price = models.DecimalField('最低价', max_digits=12, decimal_places=3)
+    close_price = models.DecimalField('收盘价', max_digits=12, decimal_places=3)
+    volume = models.BigIntegerField('成交量', default=0)
+    amount = models.DecimalField('成交额', max_digits=20, decimal_places=3, default=0)
+    source = models.CharField('数据源', max_length=32, default='tushare')
+    created_at = models.DateTimeField('创建时间', auto_now_add=True)
+    updated_at = models.DateTimeField('更新时间', auto_now=True)
+
+    class Meta:
+        ordering = ['-trade_date', '-bar_time', 'symbol']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['symbol', 'trade_date', 'bar_time'],
+                name='unique_symbol_trade_date_bar_time',
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.symbol} {self.trade_date} {self.bar_time}'

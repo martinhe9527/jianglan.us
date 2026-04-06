@@ -18,6 +18,13 @@ REPORT_DIR = ROOT / 'reports' / 'trading-plan'
 if VENV_SITE_PACKAGES and VENV_SITE_PACKAGES.exists():
     site.addsitedir(str(VENV_SITE_PACKAGES))
 
+RISK_VENV_SITE = next((ROOT / '.venv-market' / 'lib').glob('python*/site-packages'), None)
+if RISK_VENV_SITE and RISK_VENV_SITE.exists():
+    site.addsitedir(str(RISK_VENV_SITE))
+
+sys.path.insert(0, str(ROOT / 'scripts'))
+from trading_risk_check import evaluate_holdings  # type: ignore
+
 
 def load_json(path: Path, default):
     if not path.exists():
@@ -64,34 +71,58 @@ def build_message(slot: str, slot_info: dict, holdings: list, watchlist: list, w
         f'目标：{goal}',
     ]
 
+    risk_warning = None
+    risk_map = {}
+    if holdings:
+        try:
+            risk_results = evaluate_holdings(holdings)
+            risk_map = {item['code']: item for item in risk_results}
+        except Exception as exc:  # noqa: BLE001
+            risk_warning = f'持仓风控判断暂未接入成功：{exc}'
+
     lines.append('持仓动作：')
     if holdings:
         for item in holdings[:3]:
-            lines.append(
-                f"- {item['code']} {item['name']}：继续观察；现有持仓 {item['shares']}股，先围绕成本 {item['cost']} 做风控。"
-            )
+            risk = risk_map.get(item['code'])
+            if risk:
+                lines.append(
+                    f"- {item['code']} {item['name']}：{risk['action']}；现有持仓 {item['shares']}股，{risk['reason']}"
+                )
+            else:
+                lines.append(
+                    f"- {item['code']} {item['name']}：继续观察；现有持仓 {item['shares']}股，先围绕成本 {item['cost']} 做风控。"
+                )
     else:
         lines.append('- 暂无持仓数据：先不下动作。')
 
     held_codes = {item['code'] for item in holdings}
-    candidates = [item for item in watchlist if item['code'] not in held_codes][:3]
+    watch_candidates = [item for item in watchlist if item['code'] not in held_codes][:5]
+    focus_candidates = watch_candidates[:3]
+    reserve_candidates = watch_candidates[3:5]
+
     lines.append('自选动作：')
-    if candidates:
-        for item in candidates:
+    if focus_candidates:
+        for item in focus_candidates:
             lines.append(
-                f"- {item['code']} {item['name']}：继续跟踪；暂列今日重点观察，等盘中确认。"
+                f"- {item['code']} {item['name']}：保留观察；先放入观察池，等待更强确认。"
+            )
+        for item in reserve_candidates:
+            lines.append(
+                f"- {item['code']} {item['name']}：暂不列入今日重点；继续排队观察。"
             )
     else:
         lines.append('- 暂无自选候选：先不新增重点。')
 
     lines.append('今日重点：')
-    if candidates:
-        lines.append('、'.join(f"{item['code']} {item['name']}" for item in candidates))
+    if focus_candidates:
+        lines.append('、'.join(f"{item['code']} {item['name']}" for item in focus_candidates))
     else:
         lines.append('暂无')
 
     if warning:
         lines.append(f'注意：数据读取已回退，原因：{warning}')
+    if risk_warning:
+        lines.append(f'注意：{risk_warning}')
 
     return '\n'.join(lines)
 
@@ -101,12 +132,12 @@ def build_summary(slot_info: dict, holdings: list, watchlist: list, warning: str
         f"{item['code']} {item['name']}" for item in holdings[:2]
     ) or '暂无持仓'
     held_codes = {item['code'] for item in holdings}
-    candidates = [item for item in watchlist if item['code'] not in held_codes][:2]
-    candidate_text = '、'.join(
-        f"{item['code']} {item['name']}" for item in candidates
+    focus_candidates = [item for item in watchlist if item['code'] not in held_codes][:2]
+    focus_text = '、'.join(
+        f"{item['code']} {item['name']}" for item in focus_candidates
     ) or '暂无重点'
 
-    summary = f"持仓动作：{holding_text}｜自选动作：{candidate_text}"
+    summary = f"持仓动作：{holding_text}｜今日重点：{focus_text}"
     if warning:
         summary += '｜数据回退'
     return summary[:250]
@@ -145,7 +176,6 @@ def sync_to_wagtail(slot: str, slot_info: dict, message: str, holdings: list, wa
         django.setup()
 
         from django.utils import timezone  # type: ignore
-        from wagtail.models import Page  # type: ignore
         from dashboard.models import WorklogEntryPage, WorklogIndexPage  # type: ignore
 
         parent = WorklogIndexPage.objects.first()

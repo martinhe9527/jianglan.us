@@ -2,6 +2,7 @@
 __pycache__/
 *.pyc
 db.sqlite3
+.env.tushare
 media/
 staticfiles/
 node_modules/

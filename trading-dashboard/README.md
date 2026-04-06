@@ -10,8 +10,8 @@ Wagtail + TailwindCSS + PostgreSQL + Nginx (Docker) project scaffold.
 - Docker Compose
 
 ## Current status
-This is an initial deployment scaffold. The container layout and env structure are ready.
-The Django/Wagtail app itself still needs to be generated and wired.
+Core Django/Wagtail app is running, with trading worklog pages, scheduled auto-log generation, and a first Tushare market snapshot panel.
+Tushare access now includes local cache fallback to reduce transient upstream failures.
 
 ## Planned structure
 - `config/` Django settings and URLs
@@ -21,13 +21,24 @@ The Django/Wagtail app itself still needs to be generated and wired.
 - `deploy/nginx/` Nginx config
 - `scripts/` startup scripts
 
+## Market cache warm-up
+To prefill market cache manually:
+
+```bash
+cd /home/ubuntu/.openclaw/workspace/trading-dashboard
+. .venv/bin/activate
+python scripts/warm_market_cache.py
+```
+
+This fetches holdings + top watchlist snapshots and writes cache under `../memory/market-cache/`.
+Set `TUSHARE_TOKEN` in `.env` before running the warm-up script.
+
 ## Next step
-After you provide the domain, I can continue with:
-1. generate the Wagtail project
-2. wire Tailwind build
-3. add worklog/report page models
-4. configure Nginx server_name and reverse proxy
-5. prepare production `.env`
+1. add market cache warm-up to scheduled jobs
+2. drive `今日重点股票` from market snapshots instead of only static/action logs
+3. improve retry, fallback, and ranking logic for A-share candidates
+4. connect advisory outputs into the website task/worklog flow
+5. verify Docker/Nginx deployment end-to-end
 
 ## Intended access
 - local: `http://localhost`

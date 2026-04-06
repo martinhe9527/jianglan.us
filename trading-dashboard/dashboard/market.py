@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -10,7 +11,7 @@ from typing import Any
 from dashboard.data import HOLDINGS_DATA, WATCHLIST_DATA
 
 CACHE_DIR = Path('/home/ubuntu/.openclaw/workspace/memory/market-cache')
-CACHE_FILE = CACHE_DIR / 'akshare-market-snapshots.json'
+CACHE_FILE = CACHE_DIR / 'tushare-market-snapshots.json'
 CACHE_TTL_SECONDS = 300
 REQUEST_RETRIES = 2
 REQUEST_RETRY_DELAY_SECONDS = 1.2
@@ -22,18 +23,27 @@ class MarketDataError(Exception):
 
 
 @lru_cache(maxsize=1)
-def _import_akshare():
+def _get_tushare_pro():
     try:
-        import akshare as ak  # type: ignore
+        import tushare as ts  # type: ignore
     except Exception as exc:  # noqa: BLE001
-        raise MarketDataError(f'AKShare unavailable: {exc}') from exc
-    return ak
+        raise MarketDataError(f'Tushare unavailable: {exc}') from exc
+
+    token = os.environ.get('TUSHARE_TOKEN')
+    if not token:
+        raise MarketDataError('TUSHARE_TOKEN is not configured.')
+
+    try:
+        return ts.pro_api(token)
+    except Exception as exc:  # noqa: BLE001
+        raise MarketDataError(f'Unable to initialize Tushare client: {exc}') from exc
 
 
-def _normalize_symbol(code: str) -> str:
-    if code.startswith(('6', '9')):
-        return f'sh{code}'
-    return f'sz{code}'
+def _to_ts_code(code: str) -> str:
+    code = code.strip()
+    if code.startswith(('0', '3')):
+        return f'{code}.SZ'
+    return f'{code}.SH'
 
 
 def _to_float(value: Any) -> float | None:
@@ -92,26 +102,26 @@ def _load_rows_from_cache(payload: dict[str, Any] | None, codes: list[str]) -> l
     return result
 
 
-def _attempt_fetch_snapshot(ak: Any, code: str, start_date: datetime, end_date: datetime) -> dict[str, Any]:
-    hist = ak.stock_zh_a_hist(
-        symbol=code,
-        period='daily',
+def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date: datetime) -> dict[str, Any]:
+    ts_code = _to_ts_code(code)
+    hist = pro.daily(
+        ts_code=ts_code,
         start_date=start_date.strftime('%Y%m%d'),
         end_date=end_date.strftime('%Y%m%d'),
-        adjust='',
     )
     if hist is None or hist.empty:
         raise MarketDataError(f'{code}: no daily data')
 
+    hist = hist.sort_values('trade_date').reset_index(drop=True)
     latest = hist.iloc[-1]
     prev = hist.iloc[-2] if len(hist) >= 2 else None
-    close = _to_float(latest.get('收盘'))
-    pct = _to_float(latest.get('涨跌幅'))
-    amount = _to_float(latest.get('成交额'))
-    volume = _to_float(latest.get('成交量'))
-    ma5 = _to_float(hist['收盘'].tail(5).mean()) if '收盘' in hist.columns else None
-    ma10 = _to_float(hist['收盘'].tail(10).mean()) if '收盘' in hist.columns else None
-    prev_close = _to_float(prev.get('收盘')) if prev is not None else None
+    close = _to_float(latest.get('close'))
+    pct = _to_float(latest.get('pct_chg'))
+    amount = _to_float(latest.get('amount'))
+    volume = _to_float(latest.get('vol'))
+    ma5 = _to_float(hist['close'].tail(5).mean()) if 'close' in hist.columns else None
+    ma10 = _to_float(hist['close'].tail(10).mean()) if 'close' in hist.columns else None
+    prev_close = _to_float(prev.get('close')) if prev is not None else None
     close_vs_prev = None
     if close is not None and prev_close:
         close_vs_prev = close - prev_close
@@ -120,13 +130,19 @@ def _attempt_fetch_snapshot(ak: Any, code: str, start_date: datetime, end_date: 
     minute_error = None
     for minute_attempt in range(REQUEST_RETRIES + 1):
         try:
-            minute_df = ak.stock_zh_a_minute(symbol=_normalize_symbol(code), period='5', adjust='')
+            minute_df = pro.stk_mins(
+                ts_code=ts_code,
+                freq='5min',
+                start_date=start_date.strftime('%Y-%m-%d %H:%M:%S'),
+                end_date=end_date.strftime('%Y-%m-%d %H:%M:%S'),
+            )
             if minute_df is not None and not minute_df.empty:
+                minute_df = minute_df.sort_values('trade_time').reset_index(drop=True)
                 minute_row = minute_df.iloc[-1]
                 minute = {
-                    'time': str(minute_row.get('day', '')),
+                    'time': str(minute_row.get('trade_time', '')),
                     'close': _to_float(minute_row.get('close')),
-                    'volume': _to_float(minute_row.get('volume')),
+                    'volume': _to_float(minute_row.get('vol')),
                 }
             minute_error = None
             break
@@ -138,7 +154,7 @@ def _attempt_fetch_snapshot(ak: Any, code: str, start_date: datetime, end_date: 
     row = {
         'code': code,
         'name': '',
-        'trade_date': str(latest.get('日期', '')),
+        'trade_date': str(latest.get('trade_date', '')),
         'close': close,
         'pct_change': pct,
         'amount': amount,
@@ -165,7 +181,7 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
                 'cache_file': str(CACHE_FILE),
             }
 
-    ak = _import_akshare()
+    pro = _get_tushare_pro()
     end_date = datetime.now()
     start_date = end_date - timedelta(days=window_days)
     rows: list[dict[str, Any]] = []
@@ -176,7 +192,7 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
         last_error = None
         for attempt in range(REQUEST_RETRIES + 1):
             try:
-                row = _attempt_fetch_snapshot(ak, code, start_date, end_date)
+                row = _attempt_fetch_snapshot(pro, code, start_date, end_date)
                 break
             except Exception as exc:  # noqa: BLE001
                 last_error = str(exc)
@@ -216,11 +232,11 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
         except Exception:  # noqa: BLE001
             cache_acceptable = False
     if cached_rows and cache_acceptable:
-        return cached_rows, f'AKShare 拉取失败，已回退到最近缓存。{warning or ""}'.strip(), {
+        return cached_rows, f'Tushare 拉取失败，已回退到最近缓存。{warning or ""}'.strip(), {
             'source': 'cache',
             'fetched_at': cache_payload.get('fetched_at') if cache_payload else None,
             'stale': True,
             'cache_file': str(CACHE_FILE),
         }
 
-    raise MarketDataError(warning or 'AKShare returned no usable data and no cache fallback is available.')
+    raise MarketDataError(warning or 'Tushare returned no usable data and no cache fallback is available.')

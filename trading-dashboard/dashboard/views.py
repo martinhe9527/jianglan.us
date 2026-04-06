@@ -3,6 +3,7 @@ from datetime import date
 
 from django.shortcuts import render
 
+from dashboard.focus import build_log_focus_symbols, rank_focus_candidates
 from dashboard.market import MarketDataError, get_market_snapshots
 from dashboard.models import WorklogEntryPage
 from dashboard.snippets import Holding, WatchlistItem
@@ -39,22 +40,11 @@ def worklog_view(request):
     ]
     today_points = sum(item.points_used for item in today_logs)
 
-    holding_map = {item.code: item.name for item in holdings}
-    watchlist_map = {item.code: item.name for item in watchlist}
-
-    focus_symbols = []
-    seen = set()
-    holding_codes = {item.code for item in holdings}
-    # '今日重点股票' should exclude existing holdings and only surface candidate symbols.
-    for log in actionable_logs:
-        for code in [part.strip() for part in (log.related_symbols or '').split(',') if part.strip()]:
-            if code not in seen and code not in holding_codes:
-                focus_symbols.append({'code': code, 'name': holding_map.get(code) or watchlist_map.get(code) or ''})
-                seen.add(code)
-
     market_warning = None
     market_cards = []
     market_meta = None
+    focus_symbols = []
+    focus_source = 'logs'
     try:
         market_codes = []
         for item in holdings:
@@ -70,8 +60,14 @@ def worklog_view(request):
             row['name'] = name_map.get(row['code'], '')
             row['is_holding'] = row['code'] in holding_codes
             market_cards.append(row)
+        focus_symbols = rank_focus_candidates(holdings, watchlist, market_rows)
+        if focus_symbols:
+            focus_source = 'snapshots'
     except MarketDataError as exc:
         market_warning = str(exc)
+
+    if not focus_symbols:
+        focus_symbols = build_log_focus_symbols(actionable_logs, holdings, watchlist)
 
     today_type_counter = Counter(today_logs_qs.values_list('log_type', flat=True))
     type_map = {
@@ -109,6 +105,7 @@ def worklog_view(request):
         'holding_positions': holding_positions,
         'today_points': today_points,
         'focus_symbols': focus_symbols[:12],
+        'focus_source': focus_source,
         'schedule': SCHEDULE,
         'ops_status': ops_status,
         'today_type_summary': today_type_summary,
