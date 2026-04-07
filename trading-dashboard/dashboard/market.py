@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import signal
 import time
 from datetime import datetime, timedelta
 from functools import lru_cache
@@ -10,16 +11,42 @@ from typing import Any
 
 from dashboard.data import HOLDINGS_DATA, WATCHLIST_DATA
 
-CACHE_DIR = Path('/home/ubuntu/.openclaw/workspace/memory/market-cache')
+APP_ROOT = Path(__file__).resolve().parents[1]
+RUNTIME_DIR = Path(os.getenv('TRADING_RUNTIME_DIR', APP_ROOT / 'runtime'))
+CACHE_DIR = RUNTIME_DIR / 'market-cache'
 CACHE_FILE = CACHE_DIR / 'tushare-market-snapshots.json'
 CACHE_TTL_SECONDS = 300
 REQUEST_RETRIES = 2
 REQUEST_RETRY_DELAY_SECONDS = 1.2
 STALE_CACHE_ACCEPT_SECONDS = 172800
+FETCH_TIMEOUT_SECONDS = float(os.getenv('MARKET_FETCH_TIMEOUT_SECONDS', '4'))
+MARKET_LIVE_FETCH_ENABLED = os.getenv('MARKET_LIVE_FETCH_ENABLED', '').lower() in {'1', 'true', 'yes', 'on'}
 
 
 class MarketDataError(Exception):
     pass
+
+
+class MarketFetchTimeoutError(TimeoutError):
+    pass
+
+
+class _deadline:
+    def __init__(self, seconds: float):
+        self.seconds = max(seconds, 0)
+        self._previous = None
+
+    def _handle_timeout(self, _signum, _frame):
+        raise MarketFetchTimeoutError(f'Tushare request timed out after {self.seconds:.1f}s')
+
+    def __enter__(self):
+        self._previous = signal.signal(signal.SIGALRM, self._handle_timeout)
+        signal.setitimer(signal.ITIMER_REAL, self.seconds)
+
+    def __exit__(self, exc_type, exc, tb):
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        if self._previous is not None:
+            signal.signal(signal.SIGALRM, self._previous)
 
 
 @lru_cache(maxsize=1)
@@ -41,6 +68,8 @@ def _get_tushare_pro():
 
 def _to_ts_code(code: str) -> str:
     code = code.strip()
+    if code.endswith(('.SZ', '.SH', '.BJ')):
+        return code
     if code.startswith(('0', '3')):
         return f'{code}.SZ'
     return f'{code}.SH'
@@ -102,13 +131,42 @@ def _load_rows_from_cache(payload: dict[str, Any] | None, codes: list[str]) -> l
     return result
 
 
+def get_cached_market_snapshots(
+    codes: list[str],
+    allow_stale: bool = True,
+) -> tuple[list[dict[str, Any]], str | None, dict[str, Any] | None]:
+    payload = _read_cache()
+    if not payload:
+        return [], None, None
+
+    rows = _load_rows_from_cache(payload, codes)
+    if not rows:
+        return [], None, None
+
+    stale = not _is_cache_fresh(payload)
+    if stale and not allow_stale:
+        return [], None, None
+
+    warning = payload.get('warning')
+    if stale:
+        warning = '当前展示为缓存行情。' if not warning else f'当前展示为缓存行情。{warning}'
+
+    return rows, warning, {
+        'source': 'cache',
+        'fetched_at': payload.get('fetched_at'),
+        'stale': stale,
+        'cache_file': str(CACHE_FILE),
+    }
+
+
 def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date: datetime) -> dict[str, Any]:
     ts_code = _to_ts_code(code)
-    hist = pro.daily(
-        ts_code=ts_code,
-        start_date=start_date.strftime('%Y%m%d'),
-        end_date=end_date.strftime('%Y%m%d'),
-    )
+    with _deadline(FETCH_TIMEOUT_SECONDS):
+        hist = pro.daily(
+            ts_code=ts_code,
+            start_date=start_date.strftime('%Y%m%d'),
+            end_date=end_date.strftime('%Y%m%d'),
+        )
     if hist is None or hist.empty:
         raise MarketDataError(f'{code}: no daily data')
 
@@ -130,12 +188,13 @@ def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date:
     minute_error = None
     for minute_attempt in range(REQUEST_RETRIES + 1):
         try:
-            minute_df = pro.stk_mins(
-                ts_code=ts_code,
-                freq='5min',
-                start_date=start_date.strftime('%Y-%m-%d %H:%M:%S'),
-                end_date=end_date.strftime('%Y-%m-%d %H:%M:%S'),
-            )
+            with _deadline(FETCH_TIMEOUT_SECONDS):
+                minute_df = pro.stk_mins(
+                    ts_code=ts_code,
+                    freq='5min',
+                    start_date=start_date.strftime('%Y-%m-%d %H:%M:%S'),
+                    end_date=end_date.strftime('%Y-%m-%d %H:%M:%S'),
+                )
             if minute_df is not None and not minute_df.empty:
                 minute_df = minute_df.sort_values('trade_time').reset_index(drop=True)
                 minute_row = minute_df.iloc[-1]
@@ -171,15 +230,14 @@ def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date:
 
 def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
     cache_payload = _read_cache()
-    if cache_payload and _is_cache_fresh(cache_payload):
-        cached_rows = _load_rows_from_cache(cache_payload, codes)
-        if cached_rows:
-            return cached_rows, cache_payload.get('warning'), {
-                'source': 'cache',
-                'fetched_at': cache_payload.get('fetched_at'),
-                'stale': False,
-                'cache_file': str(CACHE_FILE),
-            }
+    cached_rows, cached_warning, cached_meta = get_cached_market_snapshots(codes, allow_stale=True)
+    if cached_meta and not cached_meta.get('stale'):
+        return cached_rows, cached_warning, cached_meta
+
+    if not MARKET_LIVE_FETCH_ENABLED:
+        if cached_rows and cached_meta:
+            return cached_rows, cached_warning, cached_meta
+        raise MarketDataError('Live market fetch is disabled and no cache is available.')
 
     pro = _get_tushare_pro()
     end_date = datetime.now()

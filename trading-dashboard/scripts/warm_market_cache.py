@@ -5,11 +5,12 @@ import os
 import sys
 from pathlib import Path
 
-ROOT = Path('/home/ubuntu/.openclaw/workspace/trading-dashboard')
+ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.dev')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', os.environ.get('DJANGO_SETTINGS_MODULE', 'config.settings.dev'))
+os.environ.setdefault('MARKET_LIVE_FETCH_ENABLED', '1')
 
 import django  # noqa: E402
 
@@ -21,6 +22,8 @@ from dashboard.models import WorklogEntryPage, WorklogIndexPage  # noqa: E402
 from dashboard.snippets import Holding, WatchlistItem  # noqa: E402
 
 SKIP_WAGTAIL_SYNC = os.environ.get('WARM_MARKET_CACHE_SKIP_WAGTAIL', '').lower() in {'1', 'true', 'yes'}
+if str(ROOT / 'scripts') not in sys.path:
+    sys.path.insert(0, str(ROOT / 'scripts'))
 
 
 def build_summary(rows: list[dict], warning: str | None) -> str:
@@ -123,6 +126,21 @@ def sync_to_wagtail(codes: list[str], rows: list[dict], warning: str | None, met
     return {'status': 'created', 'page_id': page.id, 'slug': page.slug}
 
 
+def prefill_intraday_cache(holdings, watchlist) -> dict:
+    try:
+        from scripts.intraday_signal_engine import get_pro, prefill_intraday_cache as warm_intraday_cache  # type: ignore
+    except Exception as exc:  # noqa: BLE001
+        return {'status': 'error', 'error': str(exc)}
+
+    holding_codes = [item.code for item in holdings]
+    watch_codes = [item.code for item in watchlist]
+    try:
+        result = warm_intraday_cache(get_pro(), holding_codes, watch_codes)
+        return {'status': 'ok', **result}
+    except Exception as exc:  # noqa: BLE001
+        return {'status': 'error', 'error': str(exc)}
+
+
 def main() -> int:
     holdings = list(Holding.objects.filter(active=True).order_by('code'))
     watchlist = list(WatchlistItem.objects.filter(active=True).order_by('priority', 'code')[:5])
@@ -136,11 +154,13 @@ def main() -> int:
             codes.append(item.code)
 
     rows, warning, meta = get_market_snapshots(codes)
+    intraday_cache = prefill_intraday_cache(holdings, watchlist)
     wagtail_sync = {'status': 'skipped'} if SKIP_WAGTAIL_SYNC else sync_to_wagtail(codes, rows, warning, meta)
     print(f'codes={codes}')
     print(f'meta={meta}')
     print(f'warning={warning}')
     print(f'rows={len(rows)}')
+    print(f'intraday_cache={intraday_cache}')
     print(f'wagtail_sync={wagtail_sync}')
     return 0
 

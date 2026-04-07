@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import shlex
 import subprocess
 import sys
@@ -16,12 +17,28 @@ def main() -> int:
     if not docker_compose:
         raise SystemExit('docker-compose not found in PATH')
 
-    quoted_args = ' '.join(shlex.quote(arg) for arg in sys.argv[1:])
-    command = f'cd /app && PYTHONPATH=/app python scripts/trading-plan-runner.py {quoted_args}'.strip()
+    date_arg = sys.argv[1] if len(sys.argv) > 1 else ''
+    quoted_date = f' {shlex.quote(date_arg)}' if date_arg else ''
     result = subprocess.run(
-        [docker_compose, '-f', str(COMPOSE_FILE), 'exec', '-T', 'web', 'sh', '-lc', command],
+        [
+            docker_compose,
+            '-f',
+            str(COMPOSE_FILE),
+            'exec',
+            '-T',
+            'web',
+            'sh',
+            '-lc',
+            f'cd /app && PYTHONPATH=/app python scripts/trading_calendar.py{quoted_date}',
+        ],
+        capture_output=True,
+        text=True,
         check=False,
     )
+    if result.stdout:
+        print(result.stdout.strip())
+    if result.stderr:
+        print(result.stderr.strip(), file=sys.stderr)
     return result.returncode
 
 

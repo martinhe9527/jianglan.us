@@ -7,19 +7,55 @@ export TZ
 ROOT="/home/ubuntu/.openclaw/workspace"
 STATE_DIR="$ROOT/memory"
 STATE_FILE="$STATE_DIR/trading-plan-state.json"
-RUNNER="$ROOT/scripts/trading-plan-runner.py"
+COMPOSE_FILE="$ROOT/trading-dashboard/docker-compose.yml"
+WEB_SERVICE="web"
+DOCKER_COMPOSE_BIN="$(command -v docker-compose || true)"
 mkdir -p "$STATE_DIR"
+
+if [[ -z "$DOCKER_COMPOSE_BIN" ]]; then
+  echo "docker-compose not found in PATH" >&2
+  exit 1
+fi
+
+run_in_web() {
+  "$DOCKER_COMPOSE_BIN" -f "$COMPOSE_FILE" exec -T "$WEB_SERVICE" "$@"
+}
+
+run_in_web_app() {
+  local script_name="$1"
+  shift
+
+  local quoted_args=""
+  if [[ "$#" -gt 0 ]]; then
+    quoted_args=$(printf " %q" "$@")
+  fi
+
+  run_in_web sh -lc "cd /app && PYTHONPATH=/app python scripts/${script_name}${quoted_args}"
+}
 
 now_date=$(date +%F)
 now_hm=$(date +%H:%M)
-weekday=$(date +%u)
+calendar_json=$(run_in_web_app trading_calendar.py "$now_date")
+is_open=$(python3 - <<'PY' "$calendar_json"
+import json,sys
+data=json.loads(sys.argv[1])
+print('yes' if data.get('is_open') else 'no')
+PY
+)
+weekend_plan=$(python3 - <<'PY' "$calendar_json"
+import json,sys
+data=json.loads(sys.argv[1])
+print(data.get('weekend_plan','none'))
+PY
+)
 
-# Trading days: Mon-Fri only (exchange holidays not yet encoded)
-if [[ "$weekday" -gt 5 ]]; then
-  exit 0
+TRADING_SLOTS=("06:30" "09:27" "09:35" "10:00" "10:30" "11:20" "13:10" "14:00" "14:28" "14:40" "17:30")
+WEEKEND_SLOT=""
+if [[ "$weekend_plan" == "sat" ]]; then
+  WEEKEND_SLOT="SAT-08:30"
+elif [[ "$weekend_plan" == "sun" ]]; then
+  WEEKEND_SLOT="SUN-15:00"
 fi
-
-FIXED_SLOTS=("09:27" "09:40" "10:30" "11:20" "14:00" "14:50" "15:05")
 
 if [[ ! -f "$STATE_FILE" ]]; then
   printf '{"date":"%s","done":[]}\n' "$now_date" > "$STATE_FILE"
@@ -54,16 +90,14 @@ PY
 }
 
 is_intraday_window="no"
-if [[ "$now_hm" > "09:14" && "$now_hm" < "11:31" ]]; then
+if [[ "$is_open" == "yes" && "$now_hm" > "09:14" && "$now_hm" < "11:31" ]]; then
   is_intraday_window="yes"
-elif [[ "$now_hm" > "12:59" && "$now_hm" < "15:01" ]]; then
+elif [[ "$is_open" == "yes" && "$now_hm" > "12:59" && "$now_hm" < "15:01" ]]; then
   is_intraday_window="yes"
 fi
 
-for slot in "${FIXED_SLOTS[@]}"; do
-  if [[ "$now_hm" != "$slot" ]]; then
-    continue
-  fi
+run_slot() {
+  local slot="$1"
 
   already_done=$(python3 - <<'PY' "$STATE_FILE" "$slot"
 import json,sys
@@ -80,7 +114,7 @@ PY
 
   echo "[$(date '+%F %T')] trading-plan fixed slot triggered: $slot"
 
-  if output=$(python3 "$RUNNER" "$slot" 2>&1); then
+  if output=$(run_in_web_app trading-plan-runner.py "$slot" 2>&1); then
     mark_done "$slot"
     printf '%s\n' "$output"
     echo "[$(date '+%F %T')] trading-plan fixed slot finished: $slot"
@@ -90,10 +124,32 @@ PY
   echo "[$(date '+%F %T')] trading-plan fixed slot failed: $slot"
   printf '%s\n' "$output" >&2
   exit 1
-done
+}
+
+if [[ "$is_open" == "yes" ]]; then
+  for slot in "${TRADING_SLOTS[@]}"; do
+    if [[ "$now_hm" == "$slot" ]]; then
+      run_slot "$slot"
+    fi
+  done
+elif [[ -n "$WEEKEND_SLOT" ]]; then
+  weekend_time="${WEEKEND_SLOT#*-}"
+  if [[ "$now_hm" == "$weekend_time" ]]; then
+    run_slot "$WEEKEND_SLOT"
+  fi
+fi
 
 if [[ "$is_intraday_window" == "yes" ]]; then
-  echo "[$(date '+%F %T')] trading-plan minute check window active"
+  if intraday_output=$(run_in_web_app intraday_signal_engine.py 2>&1); then
+    if [[ "$intraday_output" != "STATUS=no_signal" ]]; then
+      echo "[$(date '+%F %T')] intraday signal engine emitted"
+      printf '%s\n' "$intraday_output"
+    fi
+  else
+    echo "[$(date '+%F %T')] intraday signal engine failed"
+    printf '%s\n' "$intraday_output" >&2
+    exit 1
+  fi
 fi
 
 exit 0

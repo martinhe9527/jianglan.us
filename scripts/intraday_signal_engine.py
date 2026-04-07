@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import shlex
 import subprocess
-import sys
 from pathlib import Path
 
 ROOT = Path('/home/ubuntu/.openclaw/workspace')
@@ -16,10 +14,18 @@ def main() -> int:
     if not docker_compose:
         raise SystemExit('docker-compose not found in PATH')
 
-    quoted_args = ' '.join(shlex.quote(arg) for arg in sys.argv[1:])
-    command = f'cd /app && PYTHONPATH=/app python scripts/trading-plan-runner.py {quoted_args}'.strip()
     result = subprocess.run(
-        [docker_compose, '-f', str(COMPOSE_FILE), 'exec', '-T', 'web', 'sh', '-lc', command],
+        [
+            docker_compose,
+            '-f',
+            str(COMPOSE_FILE),
+            'exec',
+            '-T',
+            'web',
+            'sh',
+            '-lc',
+            'cd /app && PYTHONPATH=/app python scripts/intraday_signal_engine.py',
+        ],
         check=False,
     )
     return result.returncode

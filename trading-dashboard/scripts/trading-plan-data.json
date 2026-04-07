@@ -1,0 +1,212 @@
+{
+  "holdings": [
+    {
+      "code": "002156",
+      "name": "通富微电",
+      "shares": 2500,
+      "cost": 47.5,
+      "note": ""
+    },
+    {
+      "code": "300394",
+      "name": "天孚通信",
+      "shares": 200,
+      "cost": 339.5,
+      "note": "2026-04-03 morning buy"
+    }
+  ],
+  "watchlist": [
+    {
+      "code": "002565",
+      "name": "顺灏股份",
+      "priority": 10,
+      "note": ""
+    },
+    {
+      "code": "002361",
+      "name": "神剑股份",
+      "priority": 11,
+      "note": ""
+    },
+    {
+      "code": "603601",
+      "name": "再升科技",
+      "priority": 12,
+      "note": ""
+    },
+    {
+      "code": "301005",
+      "name": "超捷股份",
+      "priority": 13,
+      "note": ""
+    },
+    {
+      "code": "002131",
+      "name": "利欧股份",
+      "priority": 14,
+      "note": ""
+    },
+    {
+      "code": "300136",
+      "name": "信维通信",
+      "priority": 15,
+      "note": ""
+    },
+    {
+      "code": "002413",
+      "name": "雷科防务",
+      "priority": 16,
+      "note": ""
+    },
+    {
+      "code": "000559",
+      "name": "万向钱潮",
+      "priority": 17,
+      "note": ""
+    },
+    {
+      "code": "600105",
+      "name": "永鼎股份",
+      "priority": 18,
+      "note": ""
+    },
+    {
+      "code": "002195",
+      "name": "岩山科技",
+      "priority": 19,
+      "note": ""
+    },
+    {
+      "code": "603667",
+      "name": "五洲新春",
+      "priority": 20,
+      "note": ""
+    },
+    {
+      "code": "002050",
+      "name": "三花智控",
+      "priority": 21,
+      "note": ""
+    },
+    {
+      "code": "603778",
+      "name": "国晟科技",
+      "priority": 22,
+      "note": ""
+    },
+    {
+      "code": "600171",
+      "name": "上海贝岭",
+      "priority": 23,
+      "note": ""
+    },
+    {
+      "code": "600460",
+      "name": "士兰微",
+      "priority": 24,
+      "note": ""
+    },
+    {
+      "code": "600584",
+      "name": "长电科技",
+      "priority": 25,
+      "note": ""
+    },
+    {
+      "code": "002156",
+      "name": "通富微电",
+      "priority": 26,
+      "note": "holding"
+    },
+    {
+      "code": "002149",
+      "name": "西部材料",
+      "priority": 27,
+      "note": ""
+    },
+    {
+      "code": "300308",
+      "name": "中际旭创",
+      "priority": 28,
+      "note": ""
+    },
+    {
+      "code": "300502",
+      "name": "新易盛",
+      "priority": 29,
+      "note": ""
+    },
+    {
+      "code": "300604",
+      "name": "长川科技",
+      "priority": 30,
+      "note": ""
+    },
+    {
+      "code": "002709",
+      "name": "天赐材料",
+      "priority": 31,
+      "note": ""
+    },
+    {
+      "code": "600089",
+      "name": "特变电工",
+      "priority": 32,
+      "note": ""
+    },
+    {
+      "code": "002371",
+      "name": "北方华创",
+      "priority": 33,
+      "note": ""
+    },
+    {
+      "code": "300394",
+      "name": "天孚通信",
+      "priority": 34,
+      "note": "holding"
+    },
+    {
+      "code": "688008",
+      "name": "澜起科技",
+      "priority": 35,
+      "note": ""
+    },
+    {
+      "code": "002202",
+      "name": "金风科技",
+      "priority": 36,
+      "note": ""
+    },
+    {
+      "code": "300223",
+      "name": "北京君正",
+      "priority": 37,
+      "note": ""
+    },
+    {
+      "code": "002837",
+      "name": "英维克",
+      "priority": 38,
+      "note": ""
+    },
+    {
+      "code": "603986",
+      "name": "兆易创新",
+      "priority": 39,
+      "note": ""
+    },
+    {
+      "code": "301200",
+      "name": "大族数控",
+      "priority": 40,
+      "note": ""
+    },
+    {
+      "code": "300014",
+      "name": "亿纬锂能",
+      "priority": 41,
+      "note": ""
+    }
+  ]
+}
