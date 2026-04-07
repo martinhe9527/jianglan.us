@@ -1,155 +1,190 @@
 {% extends 'base.html' %}
-{% block title %}股神交易日志{% endblock %}
+{% block title %}jianglan.us{% endblock %}
+{% block meta_description %}围绕持仓、自选、盘面快照和复盘记录整理的交易工作台。{% endblock %}
+{% block head %}
+  {% if auto_refresh_seconds %}
+  <meta http-equiv="refresh" content="{{ auto_refresh_seconds }}">
+  {% endif %}
+{% endblock %}
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-8">
-  <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl">
-    <h1 class="text-3xl font-bold">股神交易工作台</h1>
-    <p class="text-slate-400 mt-2">域名：{{ domain }} ｜ 固定积分：{{ fixed_points }} ｜ 总预备：{{ reserve_points }}</p>
-  </div>
-
-  {% include 'dashboard/partials/summary_cards.html' %}
-
-  <div class="mt-8 grid grid-cols-1 xl:grid-cols-3 gap-6">
-    <section class="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <h2 class="text-xl font-semibold">交易日执行节奏</h2>
-      <div class="overflow-x-auto mt-4">
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="text-slate-400 border-b border-slate-800">
-              <th class="text-left py-3">时间</th>
-              <th class="text-left py-3">任务</th>
-              <th class="text-left py-3">目标</th>
-              <th class="text-left py-3">积分</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for time, task, goal, points in schedule %}
-            <tr class="border-b border-slate-800/60 align-top">
-              <td class="py-3 pr-3 font-semibold text-sky-400">{{ time }}</td>
-              <td class="py-3 pr-3">{{ task }}</td>
-              <td class="py-3 pr-3 text-slate-300">{{ goal }}</td>
-              <td class="py-3 text-amber-300">{{ points }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <h2 class="text-xl font-semibold">当前持仓</h2>
-      <div class="space-y-4 mt-4">
-        {% for item in holdings %}
-        <div class="rounded-xl border border-slate-800 p-4 bg-slate-950/50">
-          <div class="flex items-center justify-between gap-3">
-            <div>
-              <div class="font-semibold">{{ item.code }} {{ item.name }}</div>
-              <div class="text-slate-400 text-sm mt-1">{{ item.note }}</div>
+<div class="px-4 py-6 md:px-8 md:py-8">
+  <div class="mx-auto max-w-6xl">
+    <section class="paper-panel relative overflow-hidden rounded-[0.9rem] border border-white/10 px-6 py-6 shadow-soft md:px-10 md:py-7">
+      <div class="absolute inset-x-0 top-0 h-1 bg-sun"></div>
+      <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sun/10 to-transparent"></div>
+      <div class="relative space-y-4">
+        <div class="grid gap-4 lg:grid-cols-[80px_minmax(0,1fr)] lg:items-start">
+          <div class="flex items-center justify-start">
+            <img
+              src="https://static.httpd.site/jianglan.us/logo.png"
+              alt="江澜 logo"
+              class="h-16 w-16 rounded-[0.65rem] border border-white/10 bg-black/20 object-cover p-1"
+            >
+          </div>
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">Terminal</p>
+            <div class="mt-1.5 border-b border-white/10 pb-3">
+              <h1 class="font-display text-3xl font-semibold tracking-[0.05em] text-ink md:text-[2.75rem]">江澜</h1>
+              <p class="mt-1.5 text-base font-medium text-sun md:text-lg">理解流，掌控势。</p>
             </div>
-            <div class="text-right">
-              <div>{{ item.shares }}股</div>
-              <div class="text-emerald-400">成本 {{ item.cost }}</div>
+            <div class="mt-3 max-w-3xl space-y-1.5 text-sm leading-6 text-ink/62">
+              <p>资金在流，数据在流，决策也在流。</p>
+              <p>真正的能力，不是预测波动，而是构建系统去应对波动。</p>
+            </div>
+            <div class="mt-3 grid gap-3 lg:grid-cols-[120px_minmax(0,1fr)] lg:items-start">
+              <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">专注于</div>
+              <div class="space-y-1.5">
+                <div class="grid grid-cols-[16px_minmax(0,1fr)] gap-2 rounded-[0.5rem] border border-white/10 bg-black/15 px-3 py-1.5 text-sm text-ink/78">
+                  <span class="text-sun">&gt;</span>
+                  <span>资本结构与流动效率</span>
+                </div>
+                <div class="grid grid-cols-[16px_minmax(0,1fr)] gap-2 rounded-[0.5rem] border border-white/10 bg-black/15 px-3 py-1.5 text-sm text-ink/78">
+                  <span class="text-sun">&gt;</span>
+                  <span>数据驱动的决策系统</span>
+                </div>
+                <div class="grid grid-cols-[16px_minmax(0,1fr)] gap-2 rounded-[0.5rem] border border-white/10 bg-black/15 px-3 py-1.5 text-sm text-ink/78">
+                  <span class="text-sun">&gt;</span>
+                  <span>自动化与智能化运营</span>
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 max-w-3xl text-sm leading-6 text-ink/62">
+              <p>在复杂系统中，建立确定性。</p>
             </div>
           </div>
         </div>
-        {% endfor %}
-      </div>
-    </section>
-  </div>
+        <div class="flex flex-wrap gap-3">
+            <a href="#focus-board" class="rounded-[0.5rem] bg-sun px-4 py-2.5 text-sm font-semibold text-black transition hover:opacity-90">
+              看今日主盯
+            </a>
+            <a href="#journal" class="rounded-[0.5rem] border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-sun/60 hover:bg-white/10">
+              看复盘记录
+            </a>
+        </div>
 
-  <div class="mt-6 grid grid-cols-1 gap-6">
-    <section class="space-y-6">
-      {% include 'dashboard/partials/focus_symbols_panel.html' %}
-    </section>
-  </div>
-
-  <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold">监测池</h2>
-    <div class="flex flex-wrap gap-2 mt-4">
-      {% for item in watchlist %}
-      <span class="px-3 py-1.5 rounded-full bg-slate-800 text-slate-200 text-sm border border-slate-700">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</span>
-      {% endfor %}
-    </div>
-  </div>
-
-  <div class="mt-6">
-    {% include 'dashboard/partials/market_panel.html' %}
-  </div>
-
-  <div class="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-    {% include 'dashboard/partials/schedule_timeline.html' %}
-    {% include 'dashboard/partials/today_ops_panel.html' %}
-  </div>
-
-  <div class="mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6">
-    {% include 'dashboard/partials/today_log_types_panel.html' %}
-  </div>
-
-  <div class="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-    <section class="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <h2 class="text-xl font-semibold">最新日志</h2>
-      <div class="space-y-4 mt-4">
-        {% for log in latest_logs %}
-        <article class="rounded-xl border border-slate-800 p-4 bg-slate-950/50">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2 flex-wrap">
-                <div class="font-semibold text-lg">{{ log.title }}</div>
-                {% include 'dashboard/partials/log_type_badge.html' %}
-              </div>
-              <div class="text-slate-400 text-sm mt-1">{{ log.log_date }} {% if log.log_time %}{{ log.log_time }}{% endif %}</div>
-              {% if log.summary %}<p class="text-slate-300 mt-3">{{ log.summary }}</p>{% endif %}
-            </div>
-            <div class="text-right text-sm shrink-0">
-              <div class="text-amber-300">积分 {{ log.points_used }}</div>
-              {% if log.is_actionable %}<div class="text-emerald-300 mt-2">可执行</div>{% endif %}
+        <div class="grid gap-2.5 sm:grid-cols-3">
+          <div class="rounded-[0.55rem] border border-white/10 bg-black/20 px-4 py-2.5">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">持仓</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-xl font-semibold text-ink">{{ holdings|length }}</span>
+              <span class="text-xs text-ink/55">在仓标的</span>
             </div>
           </div>
-        </article>
-        {% empty %}
-        <div class="text-slate-400">还没有日志数据。</div>
-        {% endfor %}
+          <div class="rounded-[0.55rem] border border-white/10 bg-black/20 px-4 py-2.5">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">自选</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-xl font-semibold text-ink">{{ watchlist|length }}</span>
+              <span class="text-xs text-ink/55">观察池</span>
+            </div>
+          </div>
+          <div class="rounded-[0.55rem] border border-white/10 bg-black/20 px-4 py-2.5">
+            <div class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">记录</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-xl font-semibold text-ink">{{ latest_logs|length }}</span>
+              <span class="text-xs text-ink/55">最新条目</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-        <h2 class="text-xl font-semibold">今日日志</h2>
-        <div class="space-y-3 mt-4">
-          {% for log in today_logs %}
-          <div class="rounded-xl border border-slate-800 p-4 bg-slate-950/50">
-            <div class="flex items-center gap-2 flex-wrap">
-              <div class="font-medium">{{ log.title }}</div>
-              {% include 'dashboard/partials/log_type_badge.html' %}
+    <section class="mt-6">
+      <div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft md:p-7">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">当前持仓</p>
+        <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">手里在打的仓位</h2>
+        <div class="mt-5 grid gap-3 md:grid-cols-2">
+          {% for item in holdings %}
+          <div class="rounded-[0.75rem] border border-white/10 bg-black/15 p-4">
+            <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_132px] md:items-start">
+              <div class="min-w-0">
+                <div class="font-semibold text-ink">{{ item.code }} {{ item.name }}</div>
+                {% if item.note %}<div class="mt-1 text-sm text-ink/55">{{ item.note }}</div>{% endif %}
+              </div>
+              <div class="grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm md:border-l md:border-t-0 md:pl-4 md:pt-0">
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45">仓位</div>
+                  <div class="mt-1 text-ink/70">{{ item.shares }} 股</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45">成本</div>
+                  <div class="mt-1 text-coral">{{ item.cost }}</div>
+                </div>
+              </div>
             </div>
-            <div class="text-slate-400 text-sm mt-1">{% if log.log_time %}{{ log.log_time }}{% endif %}</div>
           </div>
           {% empty %}
-          <div class="text-slate-400">今天还没有日志。</div>
+          <div class="rounded-[0.75rem] border border-dashed border-white/15 bg-black/10 p-4 text-sm text-ink/55 md:col-span-2">
+            当前没有持仓。
+          </div>
           {% endfor %}
         </div>
       </div>
-
-      {% include 'dashboard/partials/actionable_panel.html' %}
-      {% include 'dashboard/partials/latest_logs_panel.html' %}
     </section>
-  </div>
 
-  <div class="mt-6 bg-slate-900 border border-slate-800 rounded-2xl p-6">
-    <h2 class="text-xl font-semibold">下一步开发状态</h2>
-    <ul class="mt-4 space-y-2 text-slate-300 list-disc pl-5">
-      <li>已建立 <code>WorklogIndexPage</code> / <code>WorklogEntryPage</code> 日志数据模型</li>
-      <li>已建立持仓与监测池后台模型：<code>Holding</code> / <code>WatchlistItem</code></li>
-      <li>已准备后台站点初始化命令：<code>bootstrap_site</code></li>
-      <li>已准备示例日志导入命令：<code>load_sample_logs</code></li>
-      <li>已准备持仓与监测池导入命令：<code>load_portfolio_data</code></li>
-      <li>已支持后续将早报、盘前、盘中、盘后日志录入 Wagtail 后台</li>
-      <li>后续将继续完善首页工作台、后台录入体验、Docker/Nginx 部署验证</li>
-    </ul>
-  </div>
+    <section id="focus-board" class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+      <div class="space-y-6">
+        {% include 'dashboard/partials/focus_symbols_panel.html' %}
+        {% include 'dashboard/partials/market_panel.html' %}
+      </div>
+      <div>
+        <div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
+          <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">自选池</p>
+          <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">先排队，再等确认</h2>
+          <div class="mt-5 space-y-2">
+            {% for item in watchlist %}
+            <div class="grid grid-cols-[84px_minmax(0,1fr)] gap-3 rounded-[0.6rem] border border-white/12 bg-black/15 px-3 py-2 text-sm">
+              <div class="font-semibold text-ink">{{ item.code }}</div>
+              <div class="truncate text-ink/70">{% if item.name %}{{ item.name }}{% else %}-{% endif %}</div>
+            </div>
+            {% empty %}
+            <span class="text-sm text-ink/55">当前没有自选。</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <div class="mt-6">
-    {% include 'dashboard/partials/admin_help_panel.html' %}
+    <section id="journal" class="mt-6">
+      <div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft md:p-7">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">复盘记录</p>
+            <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">复盘和盘中定性</h2>
+          </div>
+          <div class="text-sm text-ink/50">只留有用记录</div>
+        </div>
+        <div class="mt-5 space-y-4">
+          {% for log in latest_logs %}
+          <article class="rounded-[0.75rem] border border-white/10 bg-black/15 px-4 py-4">
+            <div class="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)_88px] md:items-start">
+              <div class="border-b border-white/10 pb-2 text-sm text-ink/55 md:border-b-0 md:pb-0">
+                <div>{{ log.log_date }}</div>
+                {% if log.log_time %}<div class="mt-1">{{ log.log_time }}</div>{% endif %}
+              </div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-base font-semibold text-ink">{{ log.title }}</h3>
+                  {% include 'dashboard/partials/log_type_badge.html' %}
+                </div>
+                {% if log.summary %}<p class="mt-2 text-sm leading-6 text-ink/65">{{ log.summary }}</p>{% endif %}
+              </div>
+              <div class="text-left text-sm md:text-right">
+                {% if log.is_actionable %}
+                <div class="text-palm">可执行</div>
+                {% else %}
+                <div class="text-ink/35">记录</div>
+                {% endif %}
+              </div>
+            </div>
+          </article>
+          {% empty %}
+          <div class="rounded-[0.75rem] border border-dashed border-white/15 bg-black/10 p-5 text-sm text-ink/55">
+            暂无复盘记录。
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
   </div>
 </div>
 {% endblock %}

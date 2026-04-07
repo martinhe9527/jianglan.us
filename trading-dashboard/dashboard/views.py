@@ -3,25 +3,24 @@ from datetime import date
 
 from django.shortcuts import render
 
-from dashboard.focus import build_log_focus_symbols, rank_focus_candidates
+from dashboard.focus import build_log_focus_symbols, select_focus_candidates
 from dashboard.market import MarketDataError, get_market_snapshots
 from dashboard.models import WorklogEntryPage
 from dashboard.snippets import Holding, WatchlistItem
 
 SCHEDULE = [
-    ('06:30', '早间作战总报告', '外围市场、宏观、情绪预判、赛道消息汇总', '8~12'),
-    ('09:27', '集合竞价预选报告', '持仓竞价强弱、监测池Top 3~5筛选', '8~12'),
-    ('09:35', '开盘首轮确认', '确认真强/假强、首波承接', '6~8'),
-    ('10:00', '早盘主线确认', '板块主线、持仓与预选同步度', '6~8'),
-    ('10:30', '交易信号检查', '第一次明确买卖点/做T点识别', '8~10'),
-    ('11:20', '午前定性', '上午走势总结、午后预案', '6~8'),
-    ('13:10', '午后回流检查', '午后第一波资金方向确认', '6~8'),
-    ('14:00', '尾盘前策略检查', '是否减仓、做T回补、锁利润', '8~10'),
-    ('14:28', '尾盘资金确认扫描', '识别抢筹/抢跑、隔夜价值确认', '6~8'),
-    ('14:40', '尾盘定性与隔夜判断', '强收/弱收、次日预期', '8~10'),
-    ('17:30', '盘后复盘 + 龙虎榜', '复盘持仓、监测池、资金面与明日重点', '10~14'),
+    ('06:30', '早间作战总报告', '外围市场、宏观、情绪预判、赛道消息汇总', ''),
+    ('09:27', '集合竞价预选报告', '持仓竞价强弱、监测池Top 3~5筛选', ''),
+    ('09:35', '开盘首轮确认', '确认真强/假强、首波承接', ''),
+    ('10:00', '早盘主线确认', '板块主线、持仓与预选同步度', ''),
+    ('10:30', '交易信号检查', '第一次明确买卖点/做T点识别', ''),
+    ('11:20', '午前定性', '上午走势总结、午后预案', ''),
+    ('13:10', '午后回流检查', '午后第一波资金方向确认', ''),
+    ('14:00', '尾盘前策略检查', '是否减仓、做T回补、锁利润', ''),
+    ('14:28', '尾盘资金确认扫描', '识别抢筹/抢跑、隔夜价值确认', ''),
+    ('14:40', '尾盘定性与隔夜判断', '强收/弱收、次日预期', ''),
+    ('17:30', '盘后复盘 + 龙虎榜', '复盘持仓、监测池、资金面与明日重点', ''),
 ]
-
 
 def worklog_view(request):
     latest_logs = WorklogEntryPage.objects.live().public().order_by('-log_date', '-log_time', '-first_published_at')[:8]
@@ -45,6 +44,7 @@ def worklog_view(request):
     market_meta = None
     focus_symbols = []
     focus_source = 'logs'
+    market_rows = []
     try:
         market_codes = []
         for item in holdings:
@@ -60,14 +60,49 @@ def worklog_view(request):
             row['name'] = name_map.get(row['code'], '')
             row['is_holding'] = row['code'] in holding_codes
             market_cards.append(row)
-        focus_symbols = rank_focus_candidates(holdings, watchlist, market_rows)
-        if focus_symbols:
-            focus_source = 'snapshots'
+        focus_symbols, _reserve_symbols, focus_source = select_focus_candidates(
+            holdings,
+            watchlist,
+            market_rows,
+            focus_limit=12,
+            reserve_limit=0,
+        )
     except MarketDataError as exc:
         market_warning = str(exc)
 
     if not focus_symbols:
+        focus_symbols, _reserve_symbols, focus_source = select_focus_candidates(
+            holdings,
+            watchlist,
+            [],
+            focus_limit=12,
+            reserve_limit=0,
+        )
+
+    if not focus_symbols:
         focus_symbols = build_log_focus_symbols(actionable_logs, holdings, watchlist)
+        if focus_symbols:
+            focus_source = 'logs'
+
+    market_rows_by_code = {row['code']: row for row in market_rows if row.get('code')}
+    for item in focus_symbols:
+        row = market_rows_by_code.get(item.get('code'))
+        if not row:
+            item['realtime_close'] = None
+            item['realtime_time'] = None
+            item['realtime_volume'] = None
+            item['realtime_open'] = None
+            item['realtime_high'] = None
+            item['realtime_low'] = None
+            continue
+
+        minute = row.get('minute') or {}
+        item['realtime_close'] = minute.get('close')
+        item['realtime_time'] = minute.get('time')
+        item['realtime_volume'] = minute.get('volume')
+        item['realtime_open'] = minute.get('open')
+        item['realtime_high'] = minute.get('high')
+        item['realtime_low'] = minute.get('low')
 
     today_type_counter = Counter(today_logs_qs.values_list('log_type', flat=True))
     type_map = {
@@ -97,7 +132,9 @@ def worklog_view(request):
     ]
 
     return render(request, 'dashboard/worklog.html', {
-        'domain': 'kr2-openclaw.httpd.site',
+        'domain': 'jianglan.us',
+        'site_name': 'Jianglan',
+        'site_tagline': '盘口、仓位、预选池、复盘笔记。',
         'fixed_points': 96,
         'reserve_points': 120,
         'watchlist': watchlist,
@@ -115,4 +152,5 @@ def worklog_view(request):
         'market_cards': market_cards,
         'market_warning': market_warning,
         'market_meta': market_meta,
+        'auto_refresh_seconds': 60,
     })
