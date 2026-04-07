@@ -63,4 +63,4 @@ cd /home/ubuntu/.openclaw/workspace/trading-dashboard
 
 ## License
 
-Currently licensed under Apache-2.0.
+Licensed under AGPL-3.0.
