@@ -85,6 +85,16 @@ def worklog_view(request):
             focus_source = 'logs'
 
     market_rows_by_code = {row['code']: row for row in market_rows if row.get('code')}
+    for item in holdings:
+        row = market_rows_by_code.get(item.code)
+        minute = (row or {}).get('minute') or {}
+        item.realtime_close = minute.get('close')
+        item.realtime_time = minute.get('time')
+        item.realtime_volume = minute.get('volume')
+        item.realtime_open = minute.get('open')
+        item.realtime_high = minute.get('high')
+        item.realtime_low = minute.get('low')
+
     for item in focus_symbols:
         row = market_rows_by_code.get(item.get('code'))
         if not row:

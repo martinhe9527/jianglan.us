@@ -95,12 +95,31 @@
         <div class="mt-5 grid gap-3 md:grid-cols-2">
           {% for item in holdings %}
           <div class="rounded-[0.75rem] border border-white/10 bg-black/15 p-4">
-            <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_132px] md:items-start">
+            <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_280px] md:items-start">
               <div class="min-w-0">
                 <div class="font-semibold text-ink">{{ item.code }} {{ item.name }}</div>
                 {% if item.note %}<div class="mt-1 text-sm text-ink/55">{{ item.note }}</div>{% endif %}
               </div>
               <div class="grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm md:border-l md:border-t-0 md:pl-4 md:pt-0">
+                <div class="col-span-2 rounded-[0.5rem] border border-white/10 bg-black/20 px-3 py-2">
+                  <div class="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.18em] text-ink/45">
+                    <span>实时价</span>
+                    <span>{% if item.realtime_time %}{{ item.realtime_time }}{% else %}未取到{% endif %}</span>
+                  </div>
+                  <div class="mt-1.5 flex items-end justify-between gap-3">
+                    <div class="text-base font-semibold text-ink">
+                      {% if item.realtime_close != None %}{{ item.realtime_close|floatformat:2 }}{% else %}-{% endif %}
+                    </div>
+                    {% if item.realtime_volume != None %}
+                    <div class="text-[11px] text-ink/45">量 {{ item.realtime_volume|floatformat:0 }}</div>
+                    {% endif %}
+                  </div>
+                  {% if item.realtime_open != None or item.realtime_high != None or item.realtime_low != None %}
+                  <div class="mt-1 text-[11px] text-ink/38">
+                    O {{ item.realtime_open|default:'-' }} / H {{ item.realtime_high|default:'-' }} / L {{ item.realtime_low|default:'-' }}
+                  </div>
+                  {% endif %}
+                </div>
                 <div>
                   <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45">仓位</div>
                   <div class="mt-1 text-ink/70">{{ item.shares }} 股</div>
