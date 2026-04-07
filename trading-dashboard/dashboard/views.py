@@ -22,6 +22,15 @@ SCHEDULE = [
     ('17:30', '盘后复盘 + 龙虎榜', '复盘持仓、监测池、资金面与明日重点', ''),
 ]
 
+
+def _format_trade_date(value):
+    if not value:
+        return ''
+    value = str(value)
+    if len(value) == 8 and value.isdigit():
+        return f'{value[:4]}-{value[4:6]}-{value[6:8]}'
+    return value
+
 def worklog_view(request):
     latest_logs = WorklogEntryPage.objects.live().public().order_by('-log_date', '-log_time', '-first_published_at')[:8]
     today_logs_qs = WorklogEntryPage.objects.live().public().filter(log_date=date.today()).order_by('-log_time', '-first_published_at')
@@ -59,6 +68,15 @@ def worklog_view(request):
         for row in market_rows:
             row['name'] = name_map.get(row['code'], '')
             row['is_holding'] = row['code'] in holding_codes
+            minute = row.get('minute') or {}
+            rt_k = row.get('rt_k') or {}
+            row['latest_price'] = rt_k.get('close') if rt_k.get('close') is not None else minute.get('close') if minute.get('close') is not None else row.get('close')
+            row['latest_time'] = rt_k.get('trade_time') or minute.get('time') or _format_trade_date(row.get('trade_date'))
+            row['display_prev_close'] = rt_k.get('pre_close') if rt_k.get('pre_close') is not None else row.get('prev_close')
+            row['display_open'] = rt_k.get('open')
+            row['display_high'] = rt_k.get('high')
+            row['display_low'] = rt_k.get('low')
+            row['display_pct_change'] = rt_k.get('pct_change') if rt_k.get('pct_change') is not None else row.get('pct_change')
             market_cards.append(row)
         focus_symbols, _reserve_symbols, focus_source = select_focus_candidates(
             holdings,

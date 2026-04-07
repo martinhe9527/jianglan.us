@@ -38,17 +38,18 @@
   {% endif %}
 
   <div class="mt-5 overflow-hidden rounded-[0.75rem] border border-white/10">
-    <div class="hidden border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-ink/45 md:grid md:grid-cols-[minmax(0,1.4fr)_88px_92px_88px_88px_132px] md:gap-3">
+    <div class="hidden border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-ink/45 md:grid md:grid-cols-[minmax(0,1.4fr)_80px_80px_80px_80px_92px_132px] md:gap-3">
       <div>标的</div>
-      <div>收盘</div>
+      <div>开盘价</div>
+      <div>收盘价</div>
+      <div>最高价</div>
+      <div>最低价</div>
       <div>涨跌幅</div>
-      <div>MA5</div>
-      <div>MA10</div>
       <div>分钟信号</div>
     </div>
     {% for item in market_cards %}
     <div class="border-t border-white/10 {% if forloop.first %}border-t-0{% endif %} {% if item.is_holding %}bg-palm/10{% else %}bg-black/15{% endif %}">
-      <div class="px-4 py-3 text-sm md:grid md:grid-cols-[minmax(0,1.4fr)_88px_92px_88px_88px_132px] md:gap-3 md:items-center">
+      <div class="px-4 py-3 text-sm md:grid md:grid-cols-[minmax(0,1.4fr)_80px_80px_80px_80px_92px_132px] md:gap-3 md:items-center">
         <div class="min-w-0">
           <div class="flex items-center gap-2">
             <span class="font-semibold text-ink">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</span>
@@ -58,26 +59,30 @@
             <span class="rounded-[0.35rem] border border-white/12 bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-ink/60">观察</span>
             {% endif %}
           </div>
-          <div class="mt-1 text-xs text-ink/45">{{ item.trade_date }}</div>
+          <div class="mt-1 text-xs text-ink/45">{% if item.latest_time %}{{ item.latest_time }}{% else %}{{ item.trade_date }}{% endif %}</div>
         </div>
         <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 md:mt-0 md:contents">
           <div>
-            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">收盘</div>
-            <div class="text-ink">{{ item.close|default:'-' }}</div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">开盘价</div>
+            <div class="text-ink">{% if item.display_open != None %}{{ item.display_open|floatformat:2 }}{% else %}-{% endif %}</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">收盘价</div>
+            <div class="text-ink">{% if item.latest_price != None %}{{ item.latest_price|floatformat:2 }}{% else %}-{% endif %}</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">最高价</div>
+            <div class="text-ink">{% if item.display_high != None %}{{ item.display_high|floatformat:2 }}{% else %}-{% endif %}</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">最低价</div>
+            <div class="text-ink">{% if item.display_low != None %}{{ item.display_low|floatformat:2 }}{% else %}-{% endif %}</div>
           </div>
           <div>
             <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">涨跌幅</div>
-            <div class="{% if item.pct_change and item.pct_change > 0 %}text-coral{% elif item.pct_change and item.pct_change < 0 %}text-palm{% else %}text-ink{% endif %}">
-              {{ item.pct_change|default:'-' }}{% if item.pct_change != None %}%{% endif %}
+            <div class="{% if item.display_pct_change and item.display_pct_change > 0 %}text-coral{% elif item.display_pct_change and item.display_pct_change < 0 %}text-palm{% else %}text-ink{% endif %}">
+              {{ item.display_pct_change|default:'-' }}{% if item.display_pct_change != None %}%{% endif %}
             </div>
-          </div>
-          <div>
-            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">MA5</div>
-            <div class="text-ink">{{ item.ma5|default:'-'|floatformat:2 }}</div>
-          </div>
-          <div>
-            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">MA10</div>
-            <div class="text-ink">{{ item.ma10|default:'-'|floatformat:2 }}</div>
           </div>
           <div class="col-span-2 md:col-span-1">
             <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">分钟信号</div>

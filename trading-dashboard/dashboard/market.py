@@ -257,6 +257,55 @@ def _load_rows_from_cache(payload: dict[str, Any] | None, codes: list[str]) -> l
     return result
 
 
+def _fetch_rt_k_quotes(pro: Any, codes: list[str]) -> dict[str, dict[str, Any]]:
+    if not codes:
+        return {}
+
+    ts_codes = [_to_ts_code(code) for code in codes]
+    with _deadline(FETCH_TIMEOUT_SECONDS):
+        df = pro.rt_k(ts_code=','.join(ts_codes))
+
+    if df is None or df.empty:
+        return {}
+
+    rows_by_code: dict[str, dict[str, Any]] = {}
+    for record in df.to_dict('records'):
+        ts_code = str(record.get('ts_code') or '').strip()
+        if not ts_code:
+            continue
+        base_code = ts_code.split('.')[0]
+        pre_close = _to_float(record.get('pre_close'))
+        close = _to_float(record.get('close'))
+        pct_change = None
+        if pre_close not in (None, 0) and close is not None:
+            pct_change = round(((close - pre_close) / pre_close) * 100, 4)
+        rows_by_code[base_code] = {
+            'ts_code': ts_code,
+            'name': record.get('name') or '',
+            'pre_close': pre_close,
+            'open': _to_float(record.get('open')),
+            'high': _to_float(record.get('high')),
+            'low': _to_float(record.get('low')),
+            'close': close,
+            'volume': _to_float(record.get('vol')),
+            'amount': _to_float(record.get('amount')),
+            'num': _to_float(record.get('num')),
+            'trade_time': str(record.get('trade_time') or ''),
+            'pct_change': pct_change,
+        }
+    return rows_by_code
+
+
+def _rows_have_day_ohlc(rows: list[dict[str, Any]]) -> bool:
+    if not rows:
+        return False
+    for row in rows:
+        minute = row.get('minute') or {}
+        if minute and minute.get('day_close') is not None:
+            return True
+    return False
+
+
 def _fetch_rt_min_snapshot(pro: Any, ts_code: str, code: str) -> dict[str, Any] | None:
     with _deadline(FETCH_TIMEOUT_SECONDS):
         minute_df = pro.rt_min(ts_code=ts_code, freq=RT_MIN_DEFAULT_FREQ)
@@ -267,6 +316,16 @@ def _fetch_rt_min_snapshot(pro: Any, ts_code: str, code: str) -> dict[str, Any] 
     sort_column = 'time' if 'time' in minute_df.columns else minute_df.columns[0]
     minute_df = minute_df.sort_values(sort_column).reset_index(drop=True)
     minute_row = minute_df.iloc[-1]
+    first_row = minute_df.iloc[0]
+
+    day_open = _to_float(first_row.get('open'))
+    latest_close = _to_float(minute_row.get('close'))
+    day_high = None
+    day_low = None
+    if 'high' in minute_df.columns:
+        day_high = _to_float(minute_df['high'].max())
+    if 'low' in minute_df.columns:
+        day_low = _to_float(minute_df['low'].min())
 
     return {
         'code': code,
@@ -279,6 +338,10 @@ def _fetch_rt_min_snapshot(pro: Any, ts_code: str, code: str) -> dict[str, Any] 
         'low': _to_float(minute_row.get('low')),
         'volume': _to_float(minute_row.get('vol')),
         'amount': _to_float(minute_row.get('amount')),
+        'day_open': day_open,
+        'day_close': latest_close,
+        'day_high': day_high,
+        'day_low': day_low,
     }
 
 
@@ -294,6 +357,9 @@ def get_cached_market_snapshots(
     if not rows:
         return [], None, None
 
+    if MARKET_LIVE_FETCH_ENABLED and not _rows_have_day_ohlc(rows):
+        return [], None, None
+
     stale = not _is_cache_fresh(payload)
     if stale and not allow_stale:
         return [], None, None
@@ -301,6 +367,10 @@ def get_cached_market_snapshots(
     warning = payload.get('warning')
     if stale:
         warning = '当前展示为缓存行情。' if not warning else f'当前展示为缓存行情。{warning}'
+    else:
+        # Fresh cache should be treated as a normal render path. Showing the last
+        # transient fetch error here is noisy and makes recent cached data look broken.
+        warning = None
 
     source = 'fallback_cache' if stale else 'cache'
     return rows, warning, _build_meta(payload, source=source, stale=stale, warning=warning)
@@ -348,6 +418,7 @@ def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date:
         'name': '',
         'trade_date': str(latest.get('trade_date', '')),
         'close': close,
+        'prev_close': prev_close,
         'pct_change': pct,
         'amount': amount,
         'volume': volume,
@@ -364,6 +435,7 @@ def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date:
 def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[dict[str, Any]], str | None, dict[str, Any]]:
     cache_payload = _read_cache()
     cached_rows, cached_warning, cached_meta = get_cached_market_snapshots(codes, allow_stale=True)
+    cached_rows_by_code = {row.get('code'): row for row in cached_rows if row.get('code')}
     if cached_meta and not cached_meta.get('stale'):
         return cached_rows, cached_warning, cached_meta
 
@@ -389,6 +461,12 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
     start_date = end_date - timedelta(days=window_days)
     rows: list[dict[str, Any]] = []
     errors: list[str] = []
+    rt_k_quotes: dict[str, dict[str, Any]] = {}
+
+    try:
+        rt_k_quotes = _fetch_rt_k_quotes(pro, codes)
+    except Exception as exc:  # noqa: BLE001
+        errors.append(f'rt_k: {exc}')
 
     for code in codes:
         row = None
@@ -402,6 +480,17 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
                 if attempt < REQUEST_RETRIES:
                     time.sleep(REQUEST_RETRY_DELAY_SECONDS)
         if row:
+            rt_quote = rt_k_quotes.get(code)
+            cached_rt_quote = (cached_rows_by_code.get(code) or {}).get('rt_k')
+            if not rt_quote and cached_rt_quote:
+                rt_quote = cached_rt_quote
+            if rt_quote:
+                row['rt_k'] = rt_quote
+                row['prev_close'] = rt_quote.get('pre_close')
+                row['close'] = rt_quote.get('close') if rt_quote.get('close') is not None else row.get('close')
+                row['pct_change'] = rt_quote.get('pct_change') if rt_quote.get('pct_change') is not None else row.get('pct_change')
+                row['amount'] = rt_quote.get('amount') if rt_quote.get('amount') is not None else row.get('amount')
+                row['volume'] = rt_quote.get('volume') if rt_quote.get('volume') is not None else row.get('volume')
             rows.append(row)
         else:
             errors.append(f'{code}: {last_error or "fetch failed"}')
