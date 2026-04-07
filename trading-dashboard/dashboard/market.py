@@ -24,6 +24,7 @@ STALE_CACHE_ACCEPT_SECONDS = 172800
 FAILED_FETCH_RETRY_COOLDOWN_SECONDS = int(os.getenv('MARKET_FAILED_FETCH_RETRY_COOLDOWN_SECONDS', '180'))
 LIVE_DECISION_MAX_AGE_SECONDS = int(os.getenv('MARKET_LIVE_DECISION_MAX_AGE_SECONDS', '900'))
 FETCH_TIMEOUT_SECONDS = float(os.getenv('MARKET_FETCH_TIMEOUT_SECONDS', '4'))
+RT_MIN_DEFAULT_FREQ = os.getenv('MARKET_RT_MIN_FREQ', '5MIN').upper()
 MARKET_LIVE_FETCH_ENABLED = os.getenv('MARKET_LIVE_FETCH_ENABLED', '').lower() in {'1', 'true', 'yes', 'on'}
 
 
@@ -256,6 +257,31 @@ def _load_rows_from_cache(payload: dict[str, Any] | None, codes: list[str]) -> l
     return result
 
 
+def _fetch_rt_min_snapshot(pro: Any, ts_code: str, code: str) -> dict[str, Any] | None:
+    with _deadline(FETCH_TIMEOUT_SECONDS):
+        minute_df = pro.rt_min(ts_code=ts_code, freq=RT_MIN_DEFAULT_FREQ)
+
+    if minute_df is None or minute_df.empty:
+        return None
+
+    sort_column = 'time' if 'time' in minute_df.columns else minute_df.columns[0]
+    minute_df = minute_df.sort_values(sort_column).reset_index(drop=True)
+    minute_row = minute_df.iloc[-1]
+
+    return {
+        'code': code,
+        'ts_code': ts_code,
+        'freq': RT_MIN_DEFAULT_FREQ,
+        'time': str(minute_row.get('time', '')),
+        'open': _to_float(minute_row.get('open')),
+        'close': _to_float(minute_row.get('close')),
+        'high': _to_float(minute_row.get('high')),
+        'low': _to_float(minute_row.get('low')),
+        'volume': _to_float(minute_row.get('vol')),
+        'amount': _to_float(minute_row.get('amount')),
+    }
+
+
 def get_cached_market_snapshots(
     codes: list[str],
     allow_stale: bool = True,
@@ -309,21 +335,7 @@ def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date:
     minute_error = None
     for minute_attempt in range(REQUEST_RETRIES + 1):
         try:
-            with _deadline(FETCH_TIMEOUT_SECONDS):
-                minute_df = pro.stk_mins(
-                    ts_code=ts_code,
-                    freq='5min',
-                    start_date=start_date.strftime('%Y-%m-%d %H:%M:%S'),
-                    end_date=end_date.strftime('%Y-%m-%d %H:%M:%S'),
-                )
-            if minute_df is not None and not minute_df.empty:
-                minute_df = minute_df.sort_values('trade_time').reset_index(drop=True)
-                minute_row = minute_df.iloc[-1]
-                minute = {
-                    'time': str(minute_row.get('trade_time', '')),
-                    'close': _to_float(minute_row.get('close')),
-                    'volume': _to_float(minute_row.get('vol')),
-                }
+            minute = _fetch_rt_min_snapshot(pro, ts_code, code)
             minute_error = None
             break
         except Exception as exc:  # noqa: BLE001

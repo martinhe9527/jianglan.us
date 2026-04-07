@@ -82,7 +82,14 @@
           <div class="col-span-2 md:col-span-1">
             <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">分钟信号</div>
             {% if item.minute %}
-            <div class="truncate text-ink/65">{{ item.minute.time }} / 收 {{ item.minute.close }}{% if item.minute.volume %} / 量 {{ item.minute.volume }}{% endif %}</div>
+            <div class="space-y-1 text-ink/65">
+              <div class="truncate">{{ item.minute.time }} / 收 {{ item.minute.close }}{% if item.minute.volume %} / 量 {{ item.minute.volume }}{% endif %}</div>
+              {% if item.minute.open != None or item.minute.high != None or item.minute.low != None %}
+              <div class="truncate text-[11px] text-ink/40">
+                O {{ item.minute.open|default:'-' }} / H {{ item.minute.high|default:'-' }} / L {{ item.minute.low|default:'-' }}
+              </div>
+              {% endif %}
+            </div>
             {% else %}
             <div class="text-ink/35">-</div>
             {% endif %}
