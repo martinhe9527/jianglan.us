@@ -5,205 +5,457 @@
   {% if auto_refresh_seconds %}
   <meta http-equiv="refresh" content="{{ auto_refresh_seconds }}">
   {% endif %}
+  <style>
+    @media (min-width: 1280px) and (max-height: 700px) {
+      body {
+        overflow: hidden;
+      }
+
+      .projector-shell {
+        height: 100vh;
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+
+      .projector-stage {
+        max-width: none;
+      }
+
+      .projector-hero {
+        padding-top: 1rem;
+        padding-bottom: 0.9rem;
+      }
+
+      .projector-hero .font-display {
+        font-size: 2.2rem;
+        line-height: 1;
+      }
+
+      .projector-hero p,
+      .projector-hero span,
+      .projector-hero div {
+        line-height: 1.3;
+      }
+
+      .projector-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.18fr) minmax(380px, 0.82fr);
+        gap: 14px;
+        height: calc(100vh - 204px);
+        min-height: 0;
+      }
+
+      .projector-stack {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        gap: 14px;
+        min-height: 0;
+      }
+
+      .projector-panel {
+        margin-top: 0;
+        min-height: 0;
+      }
+
+      .projector-panel .paper-panel,
+      .projector-stack > * {
+        height: 100%;
+        min-height: 0;
+      }
+
+      .projector-compact {
+        padding: 1rem;
+      }
+
+      .projector-scroll {
+        max-height: 100%;
+        overflow: auto;
+      }
+
+      .projector-panel--holdings .projector-scroll {
+        max-height: calc(100vh - 355px);
+      }
+
+      .projector-panel--market .projector-scroll {
+        max-height: calc(100vh - 438px);
+      }
+
+      .projector-panel--plan .projector-scroll {
+        max-height: 172px;
+      }
+
+      .projector-panel--watchlist .projector-scroll {
+        max-height: 88px;
+      }
+
+      .projector-panel table,
+      .projector-panel .text-sm {
+        font-size: 0.82rem;
+      }
+
+      .projector-panel .text-xs {
+        font-size: 0.68rem;
+      }
+    }
+  </style>
 {% endblock %}
 {% block content %}
-<div class="px-4 py-6 md:px-8 md:py-8">
-  <div class="mx-auto max-w-6xl">
-    <section class="paper-panel relative overflow-hidden rounded-[0.9rem] border border-white/10 px-6 py-6 shadow-soft md:px-10 md:py-7">
-      <div class="absolute inset-x-0 top-0 h-1 bg-sun"></div>
-      <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-sun/10 to-transparent"></div>
+<div class="projector-shell px-4 py-6 md:px-8 md:py-8">
+  <section class="projector-hero paper-panel theme-glow relative overflow-hidden rounded-[0.9rem] border border-white/10 px-6 py-6 shadow-soft md:px-10 md:py-7">
+      <video
+        class="absolute inset-0 h-full w-full object-cover opacity-22"
+        autoplay
+        muted
+        loop
+        playsinline
+      >
+        <source src="https://static.httpd.site/jianglan.us/shrp_homepagehero_30fps.webm" type="video/webm">
+      </video>
+      <div class="absolute inset-0 bg-black/35"></div>
+      <div class="theme-divider absolute inset-x-0 top-0 h-1"></div>
+      <div class="absolute -left-16 top-0 h-48 w-48 rounded-full bg-ember/10 blur-3xl"></div>
+      <div class="absolute right-0 top-0 h-56 w-56 rounded-full bg-ember2/10 blur-3xl"></div>
+      <div class="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-ember/10 via-ember2/5 to-transparent"></div>
       <div class="relative space-y-4">
         <div class="grid gap-4 lg:grid-cols-[80px_minmax(0,1fr)] lg:items-start">
           <div class="flex items-center justify-start">
             <img
               src="https://static.httpd.site/jianglan.us/logo.png"
               alt="江澜 logo"
-              class="h-16 w-16 rounded-[0.65rem] border border-white/10 bg-black/20 object-cover p-1"
+              class="h-16 w-16 rounded-[0.65rem] border border-white/10 bg-black/20 object-cover p-1 shadow-[0_0_0_1px_rgba(138,180,248,0.18)]"
             >
           </div>
           <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">Terminal</p>
+            <p data-i18n="terminal" class="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">Terminal</p>
             <div class="mt-1.5 border-b border-white/10 pb-3">
               <h1 class="font-display text-3xl font-semibold tracking-[0.05em] text-ink md:text-[2.75rem]">江澜</h1>
-              <p class="mt-1.5 text-base font-medium text-sun md:text-lg">理解流，掌控势。</p>
+              <p data-i18n="tagline" class="mt-1.5 text-base font-medium text-ember md:text-lg">理解流，掌控势。</p>
             </div>
-            <div class="mt-3 max-w-3xl space-y-1.5 text-sm leading-6 text-ink/62">
-              <p>资金在流，数据在流，决策也在流。</p>
-              <p>真正的能力，不是预测波动，而是构建系统去应对波动。</p>
+            <div class="mt-3 space-y-1.5 text-sm leading-6 text-ink/62">
+              <p data-i18n="line_1">资金在流，数据在流，决策也在流。</p>
+              <p data-i18n="line_2">真正的能力，不是预测波动，而是构建系统去应对波动。</p>
             </div>
             <div class="mt-3 grid gap-3 lg:grid-cols-[120px_minmax(0,1fr)] lg:items-start">
-              <div class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">专注于</div>
+              <div data-i18n="focus_on" class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">专注于</div>
               <div class="space-y-1.5">
                 <div class="grid grid-cols-[16px_minmax(0,1fr)] gap-2 rounded-[0.5rem] border border-white/10 bg-black/15 px-3 py-1.5 text-sm text-ink/78">
-                  <span class="text-sun">&gt;</span>
-                  <span>资本结构与流动效率</span>
+                  <span class="font-mono text-ember">&gt;</span>
+                  <span data-i18n="focus_1">资本结构与流动效率</span>
                 </div>
                 <div class="grid grid-cols-[16px_minmax(0,1fr)] gap-2 rounded-[0.5rem] border border-white/10 bg-black/15 px-3 py-1.5 text-sm text-ink/78">
-                  <span class="text-sun">&gt;</span>
-                  <span>数据驱动的决策系统</span>
+                  <span class="font-mono text-ember">&gt;</span>
+                  <span data-i18n="focus_2">数据驱动的决策系统</span>
                 </div>
                 <div class="grid grid-cols-[16px_minmax(0,1fr)] gap-2 rounded-[0.5rem] border border-white/10 bg-black/15 px-3 py-1.5 text-sm text-ink/78">
-                  <span class="text-sun">&gt;</span>
-                  <span>自动化与智能化运营</span>
+                  <span class="font-mono text-ember">&gt;</span>
+                  <span data-i18n="focus_3">自动化与智能化运营</span>
                 </div>
               </div>
             </div>
-            <div class="mt-3 max-w-3xl text-sm leading-6 text-ink/62">
-              <p>在复杂系统中，建立确定性。</p>
+            <div class="mt-3 text-sm leading-6 text-ink/62">
+              <p data-i18n="line_3">在复杂系统中，建立确定性。</p>
             </div>
           </div>
         </div>
-        <div class="flex flex-wrap gap-3">
-            <a href="#focus-board" class="rounded-[0.5rem] bg-sun px-4 py-2.5 text-sm font-semibold text-black transition hover:opacity-90">
-              看今日主盯
-            </a>
-            <a href="#journal" class="rounded-[0.5rem] border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-sun/60 hover:bg-white/10">
-              看复盘记录
-            </a>
-        </div>
-
         <div class="grid gap-2.5 sm:grid-cols-3">
           <div class="rounded-[0.55rem] border border-white/10 bg-black/20 px-4 py-2.5">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">持仓</div>
+            <div data-i18n="holdings" class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">持仓</div>
             <div class="mt-1 flex items-baseline gap-1.5">
               <span class="text-xl font-semibold text-ink">{{ holdings|length }}</span>
-              <span class="text-xs text-ink/55">在仓标的</span>
+              <span data-i18n="in_position" class="text-xs text-ink/55">在仓标的</span>
             </div>
           </div>
           <div class="rounded-[0.55rem] border border-white/10 bg-black/20 px-4 py-2.5">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">自选</div>
+            <div data-i18n="watchlist" class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">自选</div>
             <div class="mt-1 flex items-baseline gap-1.5">
               <span class="text-xl font-semibold text-ink">{{ watchlist|length }}</span>
-              <span class="text-xs text-ink/55">观察池</span>
+              <span data-i18n="observe_pool" class="text-xs text-ink/55">观察池</span>
             </div>
           </div>
           <div class="rounded-[0.55rem] border border-white/10 bg-black/20 px-4 py-2.5">
-            <div class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">记录</div>
+            <div data-i18n="logs" class="text-[11px] font-semibold uppercase tracking-[0.26em] text-ink/45">记录</div>
             <div class="mt-1 flex items-baseline gap-1.5">
               <span class="text-xl font-semibold text-ink">{{ latest_logs|length }}</span>
-              <span class="text-xs text-ink/55">最新条目</span>
+              <span data-i18n="latest_entries" class="text-xs text-ink/55">最新条目</span>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="mt-6">
-      <div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft md:p-7">
-        <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">当前持仓</p>
-        <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">手里在打的仓位</h2>
-        <div class="mt-5 grid gap-3 md:grid-cols-2">
-          {% for item in holdings %}
-          <div class="rounded-[0.75rem] border border-white/10 bg-black/15 p-4">
-            <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_280px] md:items-start">
+  <div class="projector-stage mx-auto mt-6 w-full max-w-none">
+    <div class="projector-grid">
+      <section class="projector-panel projector-panel--holdings">
+        <div class="paper-panel projector-compact rounded-[0.9rem] border border-white/10 p-6 shadow-soft md:p-7">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <h2 class="font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">持仓</h2>
+          <div class="text-[11px] uppercase tracking-[0.22em] text-ink/45">每10分钟检查一次</div>
+        </div>
+        <div class="mt-3 text-xs text-ink/45">持仓与实时数据合并展示，给出继续持有 / 加仓 / 卖出 / 做T 判断。</div>
+        <div class="projector-scroll mt-5 overflow-hidden rounded-[0.75rem] border border-white/10">
+          <div class="hidden border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-ink/45 md:grid md:grid-cols-[minmax(0,1.5fr)_120px_130px_88px_88px_88px_88px_96px_132px] md:gap-3">
+            <div>标的</div>
+            <div>动作</div>
+            <div>判断依据</div>
+            <div>成本</div>
+            <div>最新价</div>
+            <div>最高价</div>
+            <div>最低价</div>
+            <div>盈亏</div>
+            <div>分钟信号</div>
+          </div>
+          {% for item in holding_cards %}
+          <div class="border-t border-white/10 {% if forloop.first %}border-t-0{% endif %} bg-black/15">
+            <div class="px-4 py-3 text-sm md:grid md:grid-cols-[minmax(0,1.5fr)_120px_130px_88px_88px_88px_88px_96px_132px] md:gap-3 md:items-center">
               <div class="min-w-0">
                 <div class="font-semibold text-ink">{{ item.code }} {{ item.name }}</div>
-                {% if item.note %}<div class="mt-1 text-sm text-ink/55">{{ item.note }}</div>{% endif %}
+                <div class="mt-1 text-xs text-ink/45">
+                  {% if item.latest_time %}{{ item.latest_time }}{% else %}实时数据待补{% endif %}
+                  {% if item.board_tags %} / {{ item.board_tags|join:' / '|truncatechars:18 }}{% endif %}
+                </div>
               </div>
-              <div class="grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-sm md:border-l md:border-t-0 md:pl-4 md:pt-0">
-                <div class="col-span-2 rounded-[0.5rem] border border-white/10 bg-black/20 px-3 py-2">
-                  <div class="flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.18em] text-ink/45">
-                    <span>实时价</span>
-                    <span>{% if item.realtime_time %}{{ item.realtime_time }}{% else %}未取到{% endif %}</span>
+              <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 md:mt-0 md:contents">
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">动作</div>
+                  <div class="{% if item.action == '卖出' %}text-coral{% elif item.action == '做T' %}text-sun{% elif item.action == '加仓' %}text-sky{% else %}text-palm{% endif %}">{{ item.action }}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">判断依据</div>
+                  <div class="text-ink">{{ item.action_reason }}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">成本</div>
+                  <div class="text-ink">{% if item.cost != None %}{{ item.cost|floatformat:2 }}{% else %}-{% endif %}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">最新价</div>
+                  <div class="text-ink">{% if item.latest_price != None %}{{ item.latest_price|floatformat:2 }}{% else %}-{% endif %}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">最高价</div>
+                  <div class="text-ink">{% if item.display_high != None %}{{ item.display_high|floatformat:2 }}{% else %}-{% endif %}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">最低价</div>
+                  <div class="text-ink">{% if item.display_low != None %}{{ item.display_low|floatformat:2 }}{% else %}-{% endif %}</div>
+                </div>
+                <div>
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">盈亏</div>
+                  <div class="{% if item.pnl_pct and item.pnl_pct > 0 %}text-coral{% elif item.pnl_pct and item.pnl_pct < 0 %}text-palm{% else %}text-ink{% endif %}">
+                    {% if item.pnl_pct != None %}{{ item.pnl_pct|floatformat:2 }}%{% else %}-{% endif %}
                   </div>
-                  <div class="mt-1.5 flex items-end justify-between gap-3">
-                    <div class="text-base font-semibold text-ink">
-                      {% if item.realtime_close != None %}{{ item.realtime_close|floatformat:2 }}{% else %}-{% endif %}
+                </div>
+                <div class="col-span-2 md:col-span-1">
+                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">分钟信号</div>
+                  {% if item.minute %}
+                  <div class="space-y-1 text-ink/65">
+                    <div class="truncate">{{ item.minute.time }} / 收 {{ item.minute.close }}{% if item.minute.volume %} / 量 {{ item.minute.volume }}{% endif %}</div>
+                    {% if item.minute.open != None or item.minute.high != None or item.minute.low != None %}
+                    <div class="truncate text-[11px] text-ink/40">
+                      O {{ item.minute.open|default:'-' }} / H {{ item.minute.high|default:'-' }} / L {{ item.minute.low|default:'-' }}
                     </div>
-                    {% if item.realtime_volume != None %}
-                    <div class="text-[11px] text-ink/45">量 {{ item.realtime_volume|floatformat:0 }}</div>
                     {% endif %}
                   </div>
-                  {% if item.realtime_open != None or item.realtime_high != None or item.realtime_low != None %}
-                  <div class="mt-1 text-[11px] text-ink/38">
-                    O {{ item.realtime_open|default:'-' }} / H {{ item.realtime_high|default:'-' }} / L {{ item.realtime_low|default:'-' }}
-                  </div>
+                  {% else %}
+                  <div class="text-ink/35">-</div>
                   {% endif %}
                 </div>
-                <div>
-                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45">仓位</div>
-                  <div class="mt-1 text-ink/70">{{ item.shares }} 股</div>
-                </div>
-                <div>
-                  <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45">成本</div>
-                  <div class="mt-1 text-coral">{{ item.cost }}</div>
-                </div>
               </div>
             </div>
           </div>
           {% empty %}
-          <div class="rounded-[0.75rem] border border-dashed border-white/15 bg-black/10 p-4 text-sm text-ink/55 md:col-span-2">
-            当前没有持仓。
-          </div>
+          <div class="px-4 py-4 text-ink/55">当前没有持仓。</div>
           {% endfor %}
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
 
-    <section id="focus-board" class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-      <div class="space-y-6">
-        {% include 'dashboard/partials/focus_symbols_panel.html' %}
-        {% include 'dashboard/partials/market_panel.html' %}
-      </div>
-      <div>
-        <div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
-          <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">自选池</p>
-          <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">先排队，再等确认</h2>
-          <div class="mt-5 space-y-2">
-            {% for item in watchlist %}
-            <div class="grid grid-cols-[84px_minmax(0,1fr)] gap-3 rounded-[0.6rem] border border-white/12 bg-black/15 px-3 py-2 text-sm">
-              <div class="font-semibold text-ink">{{ item.code }}</div>
-              <div class="truncate text-ink/70">{% if item.name %}{{ item.name }}{% else %}-{% endif %}</div>
+      <div class="projector-stack">
+        <section class="projector-panel">
+          <div class="paper-panel projector-compact rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p data-i18n="auction_focus" class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">竞价优选</p>
+            <h2 data-i18n="auction_focus" class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">竞价优选</h2>
+          </div>
+          <div data-i18n="auction_slot" class="text-[11px] uppercase tracking-[0.22em] text-ink/45">09:27 集合竞价预选</div>
+        </div>
+        {% if auction_focus_log %}
+          <div class="mt-4 rounded-[0.75rem] border border-white/10 bg-black/15 px-4 py-4 shadow-[0_0_0_1px_rgba(138,180,248,0.1)]">
+          <div class="flex items-center justify-between gap-3 text-sm text-ink/55">
+            <div>{{ auction_focus_log.log_date }}{% if auction_focus_log.log_time %} {{ auction_focus_log.log_time }}{% endif %}</div>
+            <div>{% if auction_focus_log.is_actionable %}可执行{% else %}记录{% endif %}</div>
+          </div>
+          <div class="mt-3 text-base font-semibold text-ink">{{ auction_focus_log.title }}</div>
+          {% if auction_focus_log.summary %}
+          <div class="mt-2 text-sm leading-6 text-ink/70">{{ auction_focus_log.summary }}</div>
+          {% endif %}
+          {% if auction_focus_warning %}
+          <div class="mt-3 text-xs text-sun">竞价数据：{{ auction_focus_warning }}</div>
+          {% endif %}
+          {% if auction_focus_symbols %}
+          <div class="mt-3 flex flex-wrap gap-2">
+            {% for item in auction_focus_symbols %}
+            <div class="inline-flex items-center gap-2 rounded-[0.5rem] border border-white/12 bg-black/20 px-3 py-1.5 text-xs text-ink/75">
+              <span class="font-semibold text-ink">{{ item.code }}</span>
+              <span>{% if item.name %}{{ item.name }}{% else %}-{% endif %}</span>
+              {% if item.recommendation %}
+              <span class="rounded-full border border-sky/25 bg-sky/10 px-2 py-0.5 text-[11px] text-sky">{{ item.recommendation }}</span>
+              {% endif %}
+              {% if item.volume_ratio != None %}
+              <span class="text-ink/45">量比 {{ item.volume_ratio|floatformat:2 }}</span>
+              {% endif %}
+              {% if item.turnover_rate != None %}
+              <span class="text-ink/45">换手 {{ item.turnover_rate|floatformat:2 }}%</span>
+              {% endif %}
+              {% if item.gap_pct != None %}
+              <span class="text-ink/45">竞价 {{ item.gap_pct|floatformat:2 }}%</span>
+              {% endif %}
             </div>
-            {% empty %}
-            <span class="text-sm text-ink/55">当前没有自选。</span>
             {% endfor %}
           </div>
+          {% endif %}
         </div>
-      </div>
-    </section>
-
-    <section id="journal" class="mt-6">
-      <div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft md:p-7">
-        <div class="flex items-end justify-between gap-4">
-          <div>
-            <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">复盘记录</p>
-            <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">复盘和盘中定性</h2>
+        {% else %}
+          <div class="mt-4 rounded-[0.75rem] border border-dashed border-white/15 bg-black/10 px-4 py-4 text-sm text-ink/55">
+            今日 09:27 竞价优选尚未生成。
           </div>
-          <div class="text-sm text-ink/50">只留有用记录</div>
+        {% endif %}
+          </div>
+        </section>
+
+        <section id="focus-board" class="projector-stack">
+          {% include 'dashboard/partials/market_panel.html' %}
+          <div class="projector-panel projector-panel--watchlist paper-panel projector-compact rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">自选</p>
+        <h2 class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">自选</h2>
+        <div class="projector-scroll mt-5 flex flex-wrap gap-2">
+          {% for item in watchlist %}
+          <div class="inline-flex items-center gap-2 rounded-[0.6rem] border border-white/12 bg-black/15 px-3 py-2 text-sm">
+            <div class="font-semibold text-ink">{{ item.code }}</div>
+            <div class="text-ink/70">{% if item.name %}{{ item.name }}{% else %}-{% endif %}</div>
+          </div>
+          {% empty %}
+          <span class="text-sm text-ink/55">当前没有自选。</span>
+          {% endfor %}
         </div>
-        <div class="mt-5 space-y-4">
-          {% for log in latest_logs %}
-          <article class="rounded-[0.75rem] border border-white/10 bg-black/15 px-4 py-4">
-            <div class="grid gap-3 md:grid-cols-[160px_minmax(0,1fr)_88px] md:items-start">
-              <div class="border-b border-white/10 pb-2 text-sm text-ink/55 md:border-b-0 md:pb-0">
-                <div>{{ log.log_date }}</div>
-                {% if log.log_time %}<div class="mt-1">{{ log.log_time }}</div>{% endif %}
+          </div>
+        </section>
+
+        <section class="projector-panel">
+          <div class="paper-panel projector-compact rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p data-i18n="latest_report" class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">最新报告</p>
+                <h2 data-i18n="latest_report" class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">最新时点报告</h2>
               </div>
-              <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="text-base font-semibold text-ink">{{ log.title }}</h3>
-                  {% include 'dashboard/partials/log_type_badge.html' %}
-                </div>
-                {% if log.summary %}<p class="mt-2 text-sm leading-6 text-ink/65">{{ log.summary }}</p>{% endif %}
+              {% if latest_auto_log and latest_auto_log.log_time %}
+              <div class="text-[11px] uppercase tracking-[0.22em] text-ink/45">{{ latest_auto_log.log_time }}</div>
+              {% endif %}
+            </div>
+            {% if latest_auto_log %}
+            <div class="mt-4 rounded-[0.75rem] border border-white/10 bg-black/15 px-4 py-4 shadow-[0_0_0_1px_rgba(138,180,248,0.1)]">
+              <div class="flex items-center justify-between gap-3 text-sm text-ink/55">
+                <div>{{ latest_auto_log.log_date }}{% if latest_auto_log.log_time %} {{ latest_auto_log.log_time }}{% endif %}</div>
+                <div>{% if latest_auto_log.is_actionable %}可执行{% else %}记录{% endif %}</div>
               </div>
-              <div class="text-left text-sm md:text-right">
-                {% if log.is_actionable %}
-                <div class="text-palm">可执行</div>
-                {% else %}
-                <div class="text-ink/35">记录</div>
-                {% endif %}
+              <div class="mt-3 text-base font-semibold text-ink">{{ latest_auto_log.title }}</div>
+              {% if latest_auto_log.body %}
+              <div class="mt-3 space-y-1.5 text-sm leading-6 text-ink/72 [&_p]:mt-0 [&_p]:mb-1.5">
+                {{ latest_auto_log.body|safe }}
+              </div>
+              {% elif latest_auto_log.display_summary or latest_auto_log.summary %}
+              <div class="mt-2 text-sm leading-6 text-ink/70">{{ latest_auto_log.display_summary|default:latest_auto_log.summary }}</div>
+              {% endif %}
+            </div>
+            {% else %}
+            <div class="mt-4 rounded-[0.75rem] border border-dashed border-white/15 bg-black/10 px-4 py-4 text-sm text-ink/55">
+              今日最新时点报告尚未生成。
+            </div>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="projector-panel projector-panel--plan">
+          <div class="paper-panel projector-compact rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p data-i18n="plan_label" class="text-[11px] font-semibold uppercase tracking-[0.28em] text-ink/45">计划</p>
+            <h2 data-i18n="today_plan" class="mt-1.5 font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">今日工作计划</h2>
+            <div class="mt-1 text-xs text-ink/55">{% now "Y-m-d" %}</div>
+          </div>
+          <div data-i18n="auto_exec" class="text-[11px] uppercase tracking-[0.22em] text-ink/45">固定时点自动执行</div>
+        </div>
+        <div class="projector-scroll mt-5 overflow-hidden rounded-[0.75rem] border border-white/10">
+          <div class="hidden border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-ink/45 md:grid md:grid-cols-[88px_minmax(0,1.3fr)_minmax(0,2fr)_88px] md:gap-3">
+            <div>时间</div>
+            <div>任务</div>
+            <div>观点</div>
+            <div>状态</div>
+          </div>
+          {% for item in ops_status %}
+          <div class="border-t border-white/10 {% if forloop.first %}border-t-0{% endif %} bg-black/15">
+            <div class="px-4 py-3 text-sm md:grid md:grid-cols-[88px_minmax(0,1.3fr)_minmax(0,2fr)_88px] md:gap-3 md:items-center">
+              <div class="font-semibold text-ink">{{ item.time }}</div>
+              <div class="mt-2 text-ink md:mt-0">{{ item.task }}</div>
+              <div class="mt-2 text-ink/62 md:mt-0">{{ item.goal }}</div>
+              <div class="mt-2 md:mt-0">
+                <span class="inline-flex rounded-[0.45rem] border px-2.5 py-1 text-xs {% if item.status_key == 'done' %}border-palm/35 bg-palm/10 text-palm{% elif item.status_key == 'pending' %}border-ember/30 bg-ember/10 text-ember{% elif item.status_key == 'missed' %}border-sun/35 bg-sun/10 text-sun{% else %}border-coral/30 bg-coral/10 text-coral{% endif %}">
+                  {{ item.status_label }}
+                </span>
+                <div class="mt-1 text-[11px] text-ink/45">{{ item.status_hint }}</div>
               </div>
             </div>
-          </article>
-          {% empty %}
-          <div class="rounded-[0.75rem] border border-dashed border-white/15 bg-black/10 p-5 text-sm text-ink/55">
-            暂无复盘记录。
           </div>
           {% endfor %}
         </div>
+          </div>
+        </section>
       </div>
-    </section>
+      <footer class="mt-6 rounded-[0.9rem] border border-white/10 bg-black/15 px-4 py-4 shadow-soft">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-sm text-ink/62">
+            <span data-i18n="theme_switcher" class="font-semibold text-ink">Theme Switcher</span>
+            <span data-i18n="theme_desc" class="ml-2">Choose a palette for this dashboard.</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-theme-button="default" aria-pressed="true" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="theme_default">Indigo</span>
+            </button>
+            <button type="button" data-theme-button="usa" aria-pressed="false" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="theme_usa">USA Blue</span>
+            </button>
+            <button type="button" data-theme-button="china" aria-pressed="false" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="theme_china">China Red</span>
+            </button>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-col gap-3 border-t border-white/10 pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="text-sm text-ink/62">
+            <span data-i18n="language_switcher" class="font-semibold text-ink">Language</span>
+            <span data-i18n="language_desc" class="ml-2">Choose your preferred interface language.</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" data-lang-button="zh" aria-pressed="true" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="lang_zh">Chinese</span>
+            </button>
+            <button type="button" data-lang-button="en" aria-pressed="false" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="lang_en">English</span>
+            </button>
+            <button type="button" data-lang-button="ja" aria-pressed="false" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="lang_ja">Japanese</span>
+            </button>
+            <button type="button" data-lang-button="ko" aria-pressed="false" class="rounded-[0.55rem] border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-ink/65 transition hover:border-white/20 hover:bg-white/10 hover:text-ink">
+              <span data-i18n="lang_ko">Korean</span>
+            </button>
+          </div>
+        </div>
+        <div class="mt-3 border-t border-white/10 pt-3 text-xs text-ink/45">
+          <span data-i18n="copyright">Copyright Tevid and Blake workspace/memory/2026-04-04.md</span>
+          <span class="ml-3">ceo@jianglan.us</span>
+        </div>
+      </footer>
+    </div>
   </div>
 </div>
 {% endblock %}

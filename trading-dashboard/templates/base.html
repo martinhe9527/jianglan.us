@@ -3,10 +3,402 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}股神交易日志{% endblock %}</title>
+  <title>{% block title %}jianglan.us{% endblock %}</title>
+  <meta name="description" content="{% block meta_description %}jianglan.us is a living market notebook built around trading logs, watchlists, and daily execution rhythm.{% endblock %}">
+  <link rel="icon" href="https://static.httpd.site/jianglan.us/favicon.ico" sizes="any">
+  <link rel="shortcut icon" href="https://static.httpd.site/jianglan.us/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    (() => {
+      const storedTheme = (() => {
+        try {
+          const saved = window.localStorage.getItem('jianglan-theme') || 'usa';
+          return saved === 'default' ? 'usa' : saved;
+        } catch (_err) {
+          return 'usa';
+        }
+      })();
+      const storedLang = (() => {
+        try {
+          return window.localStorage.getItem('jianglan-lang') || 'en';
+        } catch (_err) {
+          return 'en';
+        }
+      })();
+      if (storedTheme) {
+        document.documentElement.dataset.theme = storedTheme;
+      }
+      document.documentElement.dataset.lang = storedLang;
+    })();
+  </script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Space Grotesk', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif'],
+            mono: ['Space Mono', 'monospace'],
+          },
+          colors: {
+            ink: '#F8FAFC',
+            mist: '#A5B4FC',
+            muted: '#818CF8',
+            sand: '#1E1B4B',
+            ocean: '#111827',
+            surf: '#050816',
+            sun: '#FBBC05',
+            palm: '#34D399',
+            coral: '#FB7185',
+            ember: '#8B5CF6',
+            ember2: '#A78BFA',
+            ember3: '#C4B5FD',
+          },
+          boxShadow: {
+            soft: '0 24px 80px rgba(0, 0, 0, 0.45)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg-primary: #06111F;
+      --bg-surface: #0B1E36;
+      --bg-elevated: #14345C;
+      --text-primary: #F8FAFC;
+      --text-secondary: #BFDBFE;
+      --text-tertiary: #93C5FD;
+      --border-default: rgba(59, 130, 246, 0.18);
+      --border-soft: rgba(96, 165, 250, 0.14);
+      --accent-blue: #3B82F6;
+      --accent-green: #34D399;
+      --accent-violet: #60A5FA;
+      --accent-coral: #93C5FD;
+      --status-warning: #FBBC05;
+      --status-error: #FB7185;
+      --bg-radial-left: rgba(59, 130, 246, 0.16);
+      --bg-radial-right: rgba(96, 165, 250, 0.12);
+      --panel-solid: rgba(11, 30, 54, 0.74);
+      --divider-start: #3B82F6;
+      --divider-mid: #60A5FA;
+      --divider-end: #93C5FD;
+      --theme-glow-ring: rgba(59, 130, 246, 0.18);
+      --theme-glow-shadow: rgba(96, 165, 250, 0.12);
+      --selection-bg: rgba(59, 130, 246, 0.28);
+      --scrollbar-thumb: rgba(59, 130, 246, 0.32);
+    }
+
+    body.theme-indigo {
+      --bg-primary: #050816;
+      --bg-surface: #111827;
+      --bg-elevated: #1E1B4B;
+      --text-primary: #F8FAFC;
+      --text-secondary: #A5B4FC;
+      --text-tertiary: #818CF8;
+      --border-default: rgba(139, 92, 246, 0.18);
+      --border-soft: rgba(167, 139, 250, 0.14);
+      --accent-blue: #8B5CF6;
+      --accent-green: #34D399;
+      --accent-violet: #A78BFA;
+      --accent-coral: #C4B5FD;
+      --status-error: #FB7185;
+      --bg-radial-left: rgba(139, 92, 246, 0.16);
+      --bg-radial-right: rgba(167, 139, 250, 0.12);
+      --panel-solid: rgba(17, 24, 39, 0.74);
+      --divider-start: #8B5CF6;
+      --divider-mid: #A78BFA;
+      --divider-end: #C4B5FD;
+      --theme-glow-ring: rgba(139, 92, 246, 0.18);
+      --theme-glow-shadow: rgba(167, 139, 250, 0.12);
+      --selection-bg: rgba(139, 92, 246, 0.28);
+      --scrollbar-thumb: rgba(139, 92, 246, 0.32);
+    }
+
+    body.theme-china-red {
+      --bg-primary: #160508;
+      --bg-surface: #271116;
+      --bg-elevated: #4B1D1B;
+      --text-primary: #F8FAFC;
+      --text-secondary: #FECACA;
+      --text-tertiary: #FDA4AF;
+      --border-default: rgba(251, 113, 133, 0.18);
+      --border-soft: rgba(244, 63, 94, 0.14);
+      --accent-blue: #F43F5E;
+      --accent-green: #34D399;
+      --accent-violet: #FB7185;
+      --accent-coral: #FECDD3;
+      --status-error: #FB7185;
+      --bg-radial-left: rgba(251, 113, 133, 0.16);
+      --bg-radial-right: rgba(244, 63, 94, 0.12);
+      --panel-solid: rgba(39, 17, 22, 0.74);
+      --divider-start: #F43F5E;
+      --divider-mid: #FB7185;
+      --divider-end: #FECDD3;
+      --theme-glow-ring: rgba(251, 113, 133, 0.18);
+      --theme-glow-shadow: rgba(244, 63, 94, 0.12);
+      --selection-bg: rgba(251, 113, 133, 0.28);
+      --scrollbar-thumb: rgba(251, 113, 133, 0.32);
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top left, var(--bg-radial-left), transparent 24%),
+        radial-gradient(circle at top right, var(--bg-radial-right), transparent 22%),
+        linear-gradient(180deg, rgba(248, 250, 252, 0.03) 0, transparent 18%),
+        linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-surface) 58%, var(--bg-elevated) 100%);
+      color: var(--text-primary);
+      font-feature-settings: "ss01" on, "cv03" on;
+    }
+
+    .paper-panel {
+      background:
+        linear-gradient(180deg, rgba(248, 250, 252, 0.04) 0%, rgba(248, 250, 252, 0.015) 100%),
+        var(--panel-solid);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 60px rgba(0, 0, 0, 0.42);
+    }
+
+    .theme-divider {
+      background: linear-gradient(90deg, var(--divider-start) 0%, var(--divider-mid) 52%, var(--divider-end) 100%);
+    }
+
+    .theme-glow {
+      box-shadow: 0 0 0 1px var(--theme-glow-ring), 0 16px 48px var(--theme-glow-shadow);
+    }
+
+    ::selection {
+      background: var(--selection-bg);
+      color: var(--text-primary);
+    }
+
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-surface);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 999px;
+      border: 2px solid var(--bg-surface);
+    }
+  </style>
+  {% block head %}{% endblock %}
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen">
+<body class="min-h-screen antialiased">
   {% block content %}{% endblock %}
+  <script>
+    (() => {
+      const translations = {
+        zh: {
+          terminal: 'Terminal',
+          tagline: '理解流，掌控势。',
+          line_1: '资金在流，数据在流，决策也在流。',
+          line_2: '真正的能力，不是预测波动，而是构建系统去应对波动。',
+          focus_on: '专注于',
+          focus_1: '资本结构与流动效率',
+          focus_2: '数据驱动的决策系统',
+          focus_3: '自动化与智能化运营',
+          line_3: '在复杂系统中，建立确定性。',
+          holdings: '持仓',
+          watchlist: '自选',
+          logs: '记录',
+          in_position: '在仓标的',
+          observe_pool: '观察池',
+          latest_entries: '最新条目',
+          auction_focus: '竞价优选',
+          auction_slot: '09:27 集合竞价预选',
+          latest_report: '最新时点报告',
+          plan_label: '计划',
+          today_plan: '今日工作计划',
+          auto_exec: '固定时点自动执行',
+          theme_switcher: 'Theme Switcher',
+          theme_desc: 'Choose a palette for this dashboard.',
+          language_switcher: 'Language',
+          language_desc: 'Choose your preferred interface language.',
+          lang_zh: 'Chinese',
+          lang_en: 'English',
+          lang_ja: 'Japanese',
+          lang_ko: 'Korean',
+          theme_default: 'Indigo',
+          theme_usa: 'USA Blue',
+          theme_china: 'China Red',
+          copyright: 'Copyright Tevid and Blake workspace/memory/2026-04-04.md',
+        },
+        en: {
+          terminal: 'Terminal',
+          tagline: 'Understand flow, command momentum.',
+          line_1: 'Capital flows, data flows, and decisions must flow too.',
+          line_2: 'Real capability is not predicting volatility, but building systems that handle it.',
+          focus_on: 'Focus',
+          focus_1: 'Capital structure and flow efficiency',
+          focus_2: 'Data-driven decision systems',
+          focus_3: 'Automation and intelligent operations',
+          line_3: 'Build certainty inside complex systems.',
+          holdings: 'Holdings',
+          watchlist: 'Watchlist',
+          logs: 'Logs',
+          in_position: 'Open positions',
+          observe_pool: 'Observation pool',
+          latest_entries: 'Latest entries',
+          auction_focus: 'Auction Focus',
+          auction_slot: '09:27 Opening Auction',
+          latest_report: 'Latest Timed Report',
+          plan_label: 'Plan',
+          today_plan: 'Today Plan',
+          auto_exec: 'Auto-run on fixed checkpoints',
+          theme_switcher: 'Theme Switcher',
+          theme_desc: 'Choose a palette for this dashboard.',
+          language_switcher: 'Language',
+          language_desc: 'Choose your preferred interface language.',
+          lang_zh: 'Chinese',
+          lang_en: 'English',
+          lang_ja: 'Japanese',
+          lang_ko: 'Korean',
+          theme_default: 'Indigo',
+          theme_usa: 'USA Blue',
+          theme_china: 'China Red',
+          copyright: 'Copyright Tevid and Blake workspace/memory/2026-04-04.md',
+        },
+        ja: {
+          terminal: 'ターミナル',
+          tagline: '流れを理解し、勢いをつかむ。',
+          line_1: '資金もデータも、意思決定も流れている。',
+          line_2: '本当の力は変動を予測することではなく、変動に対応する仕組みを作ることだ。',
+          focus_on: '注力分野',
+          focus_1: '資本構造と流動効率',
+          focus_2: 'データ駆動の意思決定システム',
+          focus_3: '自動化と知能化オペレーション',
+          line_3: '複雑なシステムの中で確実性を築く。',
+          holdings: '保有',
+          watchlist: '監視',
+          logs: '記録',
+          in_position: '保有銘柄',
+          observe_pool: '監視プール',
+          latest_entries: '最新エントリ',
+          auction_focus: '寄り前注目',
+          auction_slot: '09:27 寄り前オークション',
+          latest_report: '最新レポート',
+          plan_label: '計画',
+          today_plan: '本日の計画',
+          auto_exec: '固定時点で自動実行',
+          theme_switcher: 'テーマ',
+          theme_desc: 'ダッシュボードの配色を選択します。',
+          language_switcher: '言語',
+          language_desc: '表示言語を選択します。',
+          lang_zh: '中国語',
+          lang_en: '英語',
+          lang_ja: '日本語',
+          lang_ko: '韓国語',
+          theme_default: 'インディゴ',
+          theme_usa: 'USA Blue',
+          theme_china: 'China Red',
+          copyright: 'Copyright Tevid and Blake workspace/memory/2026-04-04.md',
+        },
+        ko: {
+          terminal: '터미널',
+          tagline: '흐름을 이해하고, 추세를 장악한다.',
+          line_1: '자금도 흐르고, 데이터도 흐르고, 의사결정도 흐른다.',
+          line_2: '진짜 역량은 변동성을 예측하는 것이 아니라, 변동성에 대응하는 시스템을 만드는 것이다.',
+          focus_on: '집중 분야',
+          focus_1: '자본 구조와 유동 효율',
+          focus_2: '데이터 기반 의사결정 시스템',
+          focus_3: '자동화와 지능형 운영',
+          line_3: '복잡한 시스템 안에서 확실성을 만든다.',
+          holdings: '보유',
+          watchlist: '관찰',
+          logs: '기록',
+          in_position: '보유 종목',
+          observe_pool: '관찰 풀',
+          latest_entries: '최신 항목',
+          auction_focus: '경매 주시',
+          auction_slot: '09:27 시가 전 경매',
+          latest_report: '최신 보고서',
+          plan_label: '계획',
+          today_plan: '오늘의 계획',
+          auto_exec: '고정 시점 자동 실행',
+          theme_switcher: '테마',
+          theme_desc: '대시보드 색상을 선택하세요.',
+          language_switcher: '언어',
+          language_desc: '원하는 인터페이스 언어를 선택하세요.',
+          lang_zh: '중국어',
+          lang_en: '영어',
+          lang_ja: '일본어',
+          lang_ko: '한국어',
+          theme_default: '인디고',
+          theme_usa: 'USA Blue',
+          theme_china: 'China Red',
+          copyright: 'Copyright Tevid and Blake workspace/memory/2026-04-04.md',
+        },
+      };
+      const themeMap = {
+        default: 'theme-indigo',
+        usa: '',
+        china: 'theme-china-red',
+      };
+      const saved = (document.documentElement.dataset.theme || 'usa') === 'default'
+        ? 'usa'
+        : (document.documentElement.dataset.theme || 'usa');
+      const savedLang = document.documentElement.dataset.lang || 'en';
+      const body = document.body;
+      const applyTheme = (key) => {
+        Object.values(themeMap).forEach((cls) => {
+          if (cls) body.classList.remove(cls);
+        });
+        const cls = themeMap[key] || '';
+        if (cls) body.classList.add(cls);
+        try {
+          window.localStorage.setItem('jianglan-theme', key);
+        } catch (_err) {}
+        document.querySelectorAll('[data-theme-button]').forEach((button) => {
+          const active = button.getAttribute('data-theme-button') === key;
+          button.setAttribute('aria-pressed', active ? 'true' : 'false');
+          button.classList.toggle('bg-white/12', active);
+          button.classList.toggle('border-white/20', active);
+          button.classList.toggle('text-ink', active);
+          button.classList.toggle('text-ink/65', !active);
+        });
+      };
+      const applyLang = (lang) => {
+        const dict = translations[lang] || translations.zh;
+        document.documentElement.lang = lang === 'zh' ? 'zh-CN' : lang;
+        try {
+          window.localStorage.setItem('jianglan-lang', lang);
+        } catch (_err) {}
+        document.querySelectorAll('[data-i18n]').forEach((node) => {
+          const key = node.getAttribute('data-i18n');
+          if (key && dict[key]) node.textContent = dict[key];
+        });
+        document.querySelectorAll('[data-lang-button]').forEach((button) => {
+          const active = button.getAttribute('data-lang-button') === lang;
+          button.setAttribute('aria-pressed', active ? 'true' : 'false');
+          button.classList.toggle('bg-white/12', active);
+          button.classList.toggle('border-white/20', active);
+          button.classList.toggle('text-ink', active);
+          button.classList.toggle('text-ink/65', !active);
+        });
+      };
+      applyTheme(saved);
+      applyLang(savedLang);
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-theme-button]');
+        if (button) {
+          applyTheme(button.getAttribute('data-theme-button') || 'default');
+          return;
+        }
+        const langButton = event.target.closest('[data-lang-button]');
+        if (langButton) {
+          applyLang(langButton.getAttribute('data-lang-button') || 'zh');
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
