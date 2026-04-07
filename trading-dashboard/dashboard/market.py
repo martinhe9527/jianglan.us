@@ -8,10 +8,12 @@ from datetime import datetime, timedelta
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from dashboard.data import HOLDINGS_DATA, WATCHLIST_DATA
 
 APP_ROOT = Path(__file__).resolve().parents[1]
+LOCAL_TZ = ZoneInfo('Asia/Shanghai')
 RUNTIME_DIR = Path(os.getenv('TRADING_RUNTIME_DIR', APP_ROOT / 'runtime'))
 CACHE_DIR = RUNTIME_DIR / 'market-cache'
 CACHE_FILE = CACHE_DIR / 'tushare-market-snapshots.json'
@@ -19,6 +21,8 @@ CACHE_TTL_SECONDS = 300
 REQUEST_RETRIES = 2
 REQUEST_RETRY_DELAY_SECONDS = 1.2
 STALE_CACHE_ACCEPT_SECONDS = 172800
+FAILED_FETCH_RETRY_COOLDOWN_SECONDS = int(os.getenv('MARKET_FAILED_FETCH_RETRY_COOLDOWN_SECONDS', '180'))
+LIVE_DECISION_MAX_AGE_SECONDS = int(os.getenv('MARKET_LIVE_DECISION_MAX_AGE_SECONDS', '900'))
 FETCH_TIMEOUT_SECONDS = float(os.getenv('MARKET_FETCH_TIMEOUT_SECONDS', '4'))
 MARKET_LIVE_FETCH_ENABLED = os.getenv('MARKET_LIVE_FETCH_ENABLED', '').lower() in {'1', 'true', 'yes', 'on'}
 
@@ -107,15 +111,136 @@ def _write_cache(payload: dict[str, Any]) -> None:
     CACHE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding='utf-8')
 
 
-def _is_cache_fresh(payload: dict[str, Any], ttl_seconds: int = CACHE_TTL_SECONDS) -> bool:
-    fetched_at = payload.get('fetched_at')
-    if not fetched_at:
-        return False
+def _parse_iso_datetime(value: Any) -> datetime | None:
+    if not value:
+        return None
     try:
-        fetched_dt = datetime.fromisoformat(fetched_at)
+        return datetime.fromisoformat(str(value))
     except Exception:  # noqa: BLE001
+        return None
+
+
+def _seconds_since(value: Any) -> float | None:
+    parsed = _parse_iso_datetime(value)
+    if parsed is None:
+        return None
+    return max((datetime.now() - parsed).total_seconds(), 0)
+
+
+def _is_cache_fresh(payload: dict[str, Any], ttl_seconds: int = CACHE_TTL_SECONDS) -> bool:
+    age_seconds = _seconds_since(payload.get('fetched_at'))
+    return age_seconds is not None and age_seconds <= ttl_seconds
+
+
+def _format_age_text(age_seconds: float | None) -> str:
+    if age_seconds is None:
+        return '时间未知'
+    if age_seconds < 60:
+        return '刚刚更新'
+    if age_seconds < 3600:
+        return f'{int(age_seconds // 60)} 分钟前'
+    if age_seconds < 86400:
+        return f'{int(age_seconds // 3600)} 小时前'
+    return f'{int(age_seconds // 86400)} 天前'
+
+
+def _format_display_time(value: Any, short: bool = False) -> str | None:
+    parsed = _parse_iso_datetime(value)
+    if parsed is None:
+        return None
+    local_dt = parsed.astimezone(LOCAL_TZ)
+    return local_dt.strftime('%m-%d %H:%M' if short else '%Y-%m-%d %H:%M:%S')
+
+
+def _build_meta(
+    payload: dict[str, Any] | None,
+    *,
+    source: str,
+    stale: bool,
+    warning: str | None = None,
+    fetch_skipped: bool = False,
+) -> dict[str, Any]:
+    fetched_at = payload.get('fetched_at') if payload else None
+    age_seconds = _seconds_since(fetched_at)
+    last_live_error = payload.get('last_live_error') if payload else None
+    live_fetch_disabled = not MARKET_LIVE_FETCH_ENABLED
+
+    if source == 'live':
+        status = '实时'
+        explanation = '已完成本轮拉取，可用于当前跟踪。'
+    elif stale:
+        status = '回退缓存'
+        explanation = '实时拉取不可用，当前仅供参考，不宜直接据此做盘中决策。'
+    else:
+        status = '缓存'
+        explanation = '最近缓存复用，适合看盘跟踪，不等同实时盘口。'
+
+    source_label = {
+        'live': '实时拉取',
+        'cache': '最近缓存',
+        'fallback_cache': '回退缓存',
+    }.get(source, source)
+
+    if fetch_skipped and last_live_error:
+        explanation = f'近期实时拉取失败，先复用缓存。{explanation}'
+    elif live_fetch_disabled and source != 'live':
+        explanation = f'实时拉取已关闭。{explanation}'
+
+    is_live_usable = age_seconds is not None and age_seconds <= LIVE_DECISION_MAX_AGE_SECONDS and source == 'live'
+    if source == 'live':
+        decision_hint = '可作盘中参考' if is_live_usable else '更适合跟踪观察'
+    elif source == 'cache':
+        decision_hint = '适合跟踪观察，不等同实时盘口'
+    else:
+        decision_hint = '仅作回退参考，别直接据此做盘中决策'
+
+    return {
+        'source': source,
+        'source_label': source_label,
+        'status': status,
+        'status_label': status,
+        'fetched_at': fetched_at,
+        'fetched_at_short': _format_display_time(fetched_at, short=True),
+        'age_seconds': age_seconds,
+        'age_text': _format_age_text(age_seconds),
+        'stale': stale,
+        'warning': warning,
+        'last_live_error': last_live_error,
+        'last_attempt_at': payload.get('last_attempt_at') if payload else None,
+        'last_attempt_at_short': _format_display_time(payload.get('last_attempt_at') if payload else None, short=True),
+        'fetch_skipped': fetch_skipped,
+        'fetch_retry_after_seconds': FAILED_FETCH_RETRY_COOLDOWN_SECONDS,
+        'is_live_usable': is_live_usable,
+        'decision_hint': decision_hint,
+        'explanation': explanation,
+        'cache_file': str(CACHE_FILE),
+    }
+
+
+def _should_cooldown_after_failed_fetch(payload: dict[str, Any] | None) -> bool:
+    if not payload or not payload.get('last_live_error'):
         return False
-    return (datetime.now() - fetched_dt).total_seconds() <= ttl_seconds
+    since_attempt = _seconds_since(payload.get('last_attempt_at'))
+    return since_attempt is not None and since_attempt <= FAILED_FETCH_RETRY_COOLDOWN_SECONDS
+
+
+def _record_fetch_attempt(
+    payload: dict[str, Any] | None,
+    *,
+    warning: str | None,
+    success: bool,
+    fetched_at: str | None = None,
+    rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    updated = dict(payload or {})
+    updated['last_attempt_at'] = datetime.now().isoformat(timespec='seconds')
+    updated['last_live_error'] = None if success else warning
+    if success:
+        updated['fetched_at'] = fetched_at
+        updated['warning'] = warning
+        updated['rows'] = rows or []
+    _write_cache(updated)
+    return updated
 
 
 def _load_rows_from_cache(payload: dict[str, Any] | None, codes: list[str]) -> list[dict[str, Any]]:
@@ -151,12 +276,8 @@ def get_cached_market_snapshots(
     if stale:
         warning = '当前展示为缓存行情。' if not warning else f'当前展示为缓存行情。{warning}'
 
-    return rows, warning, {
-        'source': 'cache',
-        'fetched_at': payload.get('fetched_at'),
-        'stale': stale,
-        'cache_file': str(CACHE_FILE),
-    }
+    source = 'fallback_cache' if stale else 'cache'
+    return rows, warning, _build_meta(payload, source=source, stale=stale, warning=warning)
 
 
 def _attempt_fetch_snapshot(pro: Any, code: str, start_date: datetime, end_date: datetime) -> dict[str, Any]:
@@ -236,8 +357,20 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
 
     if not MARKET_LIVE_FETCH_ENABLED:
         if cached_rows and cached_meta:
-            return cached_rows, cached_warning, cached_meta
+            disabled_meta = _build_meta(cache_payload, source=cached_meta.get('source', 'cache'), stale=bool(cached_meta.get('stale')), warning=cached_warning)
+            return cached_rows, cached_warning, disabled_meta
         raise MarketDataError('Live market fetch is disabled and no cache is available.')
+
+    if cached_rows and _should_cooldown_after_failed_fetch(cache_payload):
+        cooldown_warning = cache_payload.get('last_live_error') or cached_warning
+        cooldown_meta = _build_meta(
+            cache_payload,
+            source='fallback_cache' if cached_meta and cached_meta.get('stale') else 'cache',
+            stale=True,
+            warning=cooldown_warning,
+            fetch_skipped=True,
+        )
+        return cached_rows, cooldown_warning, cooldown_meta
 
     pro = _get_tushare_pro()
     end_date = datetime.now()
@@ -268,18 +401,15 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
             warning += f'；另有 {len(errors) - 5} 条错误'
 
     if rows:
-        payload = {
-            'fetched_at': datetime.now().isoformat(timespec='seconds'),
-            'warning': warning,
-            'rows': rows,
-        }
-        _write_cache(payload)
-        return rows, warning, {
-            'source': 'live',
-            'fetched_at': payload['fetched_at'],
-            'stale': False,
-            'cache_file': str(CACHE_FILE),
-        }
+        fetched_at = datetime.now().isoformat(timespec='seconds')
+        payload = _record_fetch_attempt(
+            cache_payload,
+            warning=warning,
+            success=True,
+            fetched_at=fetched_at,
+            rows=rows,
+        )
+        return rows, warning, _build_meta(payload, source='live', stale=False, warning=warning)
 
     cached_rows = _load_rows_from_cache(cache_payload, codes)
     cache_acceptable = False
@@ -290,11 +420,13 @@ def get_market_snapshots(codes: list[str], window_days: int = 10) -> tuple[list[
         except Exception:  # noqa: BLE001
             cache_acceptable = False
     if cached_rows and cache_acceptable:
-        return cached_rows, f'Tushare 拉取失败，已回退到最近缓存。{warning or ""}'.strip(), {
-            'source': 'cache',
-            'fetched_at': cache_payload.get('fetched_at') if cache_payload else None,
-            'stale': True,
-            'cache_file': str(CACHE_FILE),
-        }
+        fallback_warning = f'Tushare 拉取失败，已回退到最近缓存。{warning or ""}'.strip()
+        updated_payload = _record_fetch_attempt(cache_payload, warning=warning, success=False)
+        return cached_rows, fallback_warning, _build_meta(
+            updated_payload,
+            source='fallback_cache',
+            stale=True,
+            warning=fallback_warning,
+        )
 
     raise MarketDataError(warning or 'Tushare returned no usable data and no cache fallback is available.')

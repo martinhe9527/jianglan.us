@@ -1,67 +1,97 @@
-<div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+<div class="paper-panel rounded-[0.9rem] border border-white/10 p-6 shadow-soft">
   <div class="flex items-center justify-between gap-3 flex-wrap">
-    <h2 class="text-xl font-semibold">Tushare 行情快照</h2>
-    <div class="text-xs text-slate-400">持仓优先 + 观察池前 5</div>
+    <h2 class="font-display text-[1.75rem] font-semibold uppercase tracking-[0.04em] text-ink">盘面快照</h2>
+    <div class="text-[11px] uppercase tracking-[0.22em] text-ink/45">持仓优先，补观察池前 5</div>
   </div>
 
   {% if market_meta %}
-  <div class="mt-3 text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1">
-    <span>来源：{% if market_meta.source == 'live' %}实时抓取{% else %}本地缓存{% endif %}</span>
-    {% if market_meta.fetched_at %}<span>更新时间：{{ market_meta.fetched_at }}</span>{% endif %}
-    {% if market_meta.stale %}<span class="text-amber-300">状态：回退缓存</span>{% endif %}
+  <div class="mt-4 rounded-[0.5rem] border border-white/10 bg-black/20 px-4 py-3">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <span class="inline-flex items-center rounded-[0.3rem] border {% if market_meta.status == '实时' %}border-coral/40 bg-coral/10 text-coral{% elif market_meta.status == '缓存' %}border-white/15 bg-white/5 text-ink/72{% else %}border-sun/45 bg-sun/10 text-sun{% endif %} px-2 py-1 text-[11px] uppercase tracking-[0.18em]">
+        {{ market_meta.status_label|default:market_meta.status }}
+      </span>
+      <div class="text-sm text-ink">
+        {% if market_meta.fetched_at %}更新时间 {{ market_meta.fetched_at_short|default:market_meta.fetched_at }}{% else %}更新时间未知{% endif %}
+      </div>
+      <div class="text-xs text-ink/50">{{ market_meta.age_text }}</div>
+      <div class="text-xs {% if market_meta.is_live_usable %}text-palm{% else %}text-ink/45{% endif %}">
+        {{ market_meta.decision_hint }}
+      </div>
+    </div>
+    <div class="mt-2 grid gap-1 text-xs text-ink/48 md:grid-cols-3 md:gap-3">
+      <span>数据状态：{{ market_meta.status_label|default:market_meta.status }}</span>
+      <span>数据来源：{{ market_meta.source_label|default:market_meta.source }}</span>
+      <span>{% if market_meta.last_attempt_at and market_meta.status != '实时' %}最近尝试 {{ market_meta.last_attempt_at_short|default:market_meta.last_attempt_at }}{% else %}快照以当前缓存策略展示{% endif %}</span>
+    </div>
+    {% if market_meta.explanation %}
+    <div class="mt-2 text-xs {% if market_meta.status == '回退缓存' %}text-sun{% else %}text-ink/55{% endif %}">
+      {{ market_meta.explanation }}
+    </div>
+    {% endif %}
   </div>
   {% endif %}
 
   {% if market_warning %}
-  <div class="mt-3 rounded-xl border border-amber-800/60 bg-amber-950/20 p-3 text-sm text-amber-200">
-    行情读取告警：{{ market_warning }}
+  <div class="mt-3 rounded-[0.5rem] border border-sun/50 bg-sun/10 p-3 text-sm text-sun">
+    行情状态：{{ market_warning }}
   </div>
   {% endif %}
 
-  <div class="mt-4 grid grid-cols-1 xl:grid-cols-2 gap-4">
+  <div class="mt-5 overflow-hidden rounded-[0.75rem] border border-white/10">
+    <div class="hidden border-b border-white/10 bg-white/5 px-4 py-3 text-[11px] uppercase tracking-[0.24em] text-ink/45 md:grid md:grid-cols-[minmax(0,1.4fr)_88px_92px_88px_88px_132px] md:gap-3">
+      <div>标的</div>
+      <div>收盘</div>
+      <div>涨跌幅</div>
+      <div>MA5</div>
+      <div>MA10</div>
+      <div>分钟信号</div>
+    </div>
     {% for item in market_cards %}
-    <div class="rounded-xl border {% if item.is_holding %}border-emerald-800/60 bg-emerald-950/10{% else %}border-slate-800 bg-slate-950/40{% endif %} p-4">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <div class="font-semibold">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</div>
-          <div class="text-slate-400 text-sm mt-1">{{ item.trade_date }}</div>
+    <div class="border-t border-white/10 {% if forloop.first %}border-t-0{% endif %} {% if item.is_holding %}bg-palm/10{% else %}bg-black/15{% endif %}">
+      <div class="px-4 py-3 text-sm md:grid md:grid-cols-[minmax(0,1.4fr)_88px_92px_88px_88px_132px] md:gap-3 md:items-center">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-ink">{{ item.code }}{% if item.name %} {{ item.name }}{% endif %}</span>
+            {% if item.is_holding %}
+            <span class="rounded-[0.35rem] border border-palm/30 bg-palm/90 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-black">持仓</span>
+            {% else %}
+            <span class="rounded-[0.35rem] border border-white/12 bg-black/20 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-ink/60">观察</span>
+            {% endif %}
+          </div>
+          <div class="mt-1 text-xs text-ink/45">{{ item.trade_date }}</div>
         </div>
-        {% if item.is_holding %}
-        <span class="px-2.5 py-1 rounded-full bg-emerald-900/40 text-emerald-200 text-xs border border-emerald-700">持仓</span>
-        {% else %}
-        <span class="px-2.5 py-1 rounded-full bg-sky-900/30 text-sky-200 text-xs border border-sky-700">观察</span>
-        {% endif %}
-      </div>
-
-      <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-        <div>
-          <div class="text-slate-400">收盘</div>
-          <div class="mt-1 text-slate-100 font-medium">{{ item.close|default:'-' }}</div>
-        </div>
-        <div>
-          <div class="text-slate-400">涨跌幅</div>
-          <div class="mt-1 font-medium {% if item.pct_change and item.pct_change > 0 %}text-rose-300{% elif item.pct_change and item.pct_change < 0 %}text-emerald-300{% else %}text-slate-100{% endif %}">
-            {{ item.pct_change|default:'-' }}{% if item.pct_change != None %}%{% endif %}
+        <div class="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 md:mt-0 md:contents">
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">收盘</div>
+            <div class="text-ink">{{ item.close|default:'-' }}</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">涨跌幅</div>
+            <div class="{% if item.pct_change and item.pct_change > 0 %}text-coral{% elif item.pct_change and item.pct_change < 0 %}text-palm{% else %}text-ink{% endif %}">
+              {{ item.pct_change|default:'-' }}{% if item.pct_change != None %}%{% endif %}
+            </div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">MA5</div>
+            <div class="text-ink">{{ item.ma5|default:'-'|floatformat:2 }}</div>
+          </div>
+          <div>
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">MA10</div>
+            <div class="text-ink">{{ item.ma10|default:'-'|floatformat:2 }}</div>
+          </div>
+          <div class="col-span-2 md:col-span-1">
+            <div class="text-[11px] uppercase tracking-[0.24em] text-ink/45 md:hidden">分钟信号</div>
+            {% if item.minute %}
+            <div class="truncate text-ink/65">{{ item.minute.time }} / 收 {{ item.minute.close }}{% if item.minute.volume %} / 量 {{ item.minute.volume }}{% endif %}</div>
+            {% else %}
+            <div class="text-ink/35">-</div>
+            {% endif %}
           </div>
         </div>
-        <div>
-          <div class="text-slate-400">MA5</div>
-          <div class="mt-1 text-slate-100 font-medium">{{ item.ma5|default:'-'|floatformat:2 }}</div>
-        </div>
-        <div>
-          <div class="text-slate-400">MA10</div>
-          <div class="mt-1 text-slate-100 font-medium">{{ item.ma10|default:'-'|floatformat:2 }}</div>
-        </div>
       </div>
-
-      {% if item.minute %}
-      <div class="mt-3 text-xs text-slate-400">
-        最近 5 分钟：{{ item.minute.time }} ｜ close {{ item.minute.close }}{% if item.minute.volume %} ｜ volume {{ item.minute.volume }}{% endif %}
-      </div>
-      {% endif %}
     </div>
     {% empty %}
-    <div class="text-slate-400">当前还没有可展示的行情快照。</div>
+    <div class="px-4 py-4 text-ink/55">当前没有可展示的行情快照。</div>
     {% endfor %}
   </div>
 </div>
