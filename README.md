@@ -1,4 +1,5 @@
 # jianglan.us
+![Uploading image.png…]()
 
 A trading-focused web workspace centered on execution rhythm, market observation, and daily decision support.
 
